@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="description" content="Prywatna aplikacja PWA do kart anestezjologicznych weterynaryjnych." />
+  <title>Anestezjologia</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="lockScreen" class="lock-screen">
+    <div class="card lock-card">
+      <img src="icons/icon-192.png" alt="Ikona aplikacji" class="app-icon" />
+      <h1>Anestezjologia</h1>
+      <p>Tech.Wet Woroch Marcin</p>
+      <label for="pinInput">PIN</label>
+      <input id="pinInput" type="password" inputmode="numeric" placeholder="Wpisz PIN" />
+      <button id="unlockBtn">Otworz aplikacje</button>
+      <small>Prywatna wersja PWA na Androida</small>
+    </div>
+  </div>
+
+  <div id="app" class="app hidden">
+    <aside class="sidebar no-print">
+      <div class="sidebar-header">
+        <h2>Historia pacjentow</h2>
+        <button id="newRecordBtn" class="secondary">Nowa karta</button>
+      </div>
+
+      <input id="searchInput" type="search" placeholder="Szukaj: zwierze, wlasciciel..." />
+
+      <div id="historyList" class="history-list"></div>
+
+      <div class="sidebar-tools">
+        <h3>Prywatnosc i kopia</h3>
+        <button id="exportBtn" class="secondary">Eksport kopii</button>
+        <label class="file-label">
+          Import kopii
+          <input id="importInput" type="file" accept="application/json" hidden />
+        </label>
+        <label class="check-row"><input type="checkbox" id="requirePinToggle" /> Wymagaj PIN przy starcie</label>
+        <label>Znak wodny
+          <input id="watermarkInput" type="text" />
+        </label>
+        <label>PIN aplikacji
+          <input id="pinSettingsInput" type="password" inputmode="numeric" />
+        </label>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar no-print">
+        <div>
+          <h1>Anestezjologia</h1>
+          <p>Tech.Wet Woroch Marcin</p>
+        </div>
+        <div class="topbar-actions">
+          <button id="saveBtn">Zapisz</button>
+          <button id="printBtn" class="secondary">Drukuj / PDF</button>
+          <button id="samePatientBtn" class="secondary">Nowa karta tego pacjenta</button>
+        </div>
+      </header>
+
+      <section id="printArea" class="print-sheet">
+        <div class="watermark" id="watermarkPreview"></div>
+        <div class="sheet-header">
+          <div>
+            <div class="brand">Tech.Wet Woroch Marcin</div>
+            <div class="title">PLAN ANESTEZJOLOGICZNY</div>
+            <div class="author">Autorstwo: Tech.Wet Woroch Marcin</div>
+          </div>
+          <div class="header-grid compact">
+            <label>Data karty<input id="visitDate" type="date" /></label>
+          </div>
+        </div>
+
+        <div class="two-col">
+          <section class="panel">
+            <h3>1. Dane podstawowe</h3>
+            <div class="grid two">
+              <label>Imie i nazwisko wlasciciela<input id="ownerName" type="text" /></label>
+              <label>Imie zwierzecia<input id="animalName" type="text" /></label>
+              <label>Gatunek<input id="species" type="text" /></label>
+              <label>Rasa<input id="breed" type="text" /></label>
+              <label>Wiek<input id="age" type="text" /></label>
+              <label>Waga<input id="weight" type="text" /></label>
+            </div>
+          </section>
+
+          <section class="panel">
+            <h3>2. Wywiad kliniczny</h3>
+            <div class="grid one">
+              <label>Choroby przewlekle<textarea id="historyChronic" rows="2"></textarea></label>
+              <label>Leki / alergie<textarea id="historyMedsAllergies" rows="2"></textarea></label>
+              <label>Poprzednie znieczulenia<textarea id="historyPrevAnesthesia" rows="2"></textarea></label>
+            </div>
+          </section>
+        </div>
+
+        <div class="three-col compact-gap">
+          <section class="panel">
+            <h3>3. Stan ogolny</h3>
+            <select id="generalState">
+              <option>Swiadomy</option>
+              <option>Nieswiadomy</option>
+              <option>Otepialy</option>
+            </select>
+          </section>
+
+          <section class="panel">
+            <h3>4. Charakter</h3>
+            <div class="chips">
+              <label><input type="checkbox" id="t_wesoly" /> Wesoly</label>
+              <label><input type="checkbox" id="t_agresywny" /> Agresywny</label>
+              <label><input type="checkbox" id="t_cichy" /> Cichy</label>
+              <label><input type="checkbox" id="t_spokojny" /> Spokojny</label>
+              <label><input type="checkbox" id="t_niespokojny" /> Niespokojny</label>
+            </div>
+          </section>
+
+          <section class="panel">
+            <h3>5. Rodzaj zabiegu</h3>
+            <label>Rodzaj zabiegu + ASA<input id="procedureAsa" type="text" /></label>
+          </section>
+        </div>
+
+        <section class="panel">
+          <h3>6. Dawki lekow</h3>
+          <div class="table-wrap">
+            <table id="drugTable">
+              <thead><tr><th>Lek</th><th>Dawka</th><th>Droga</th><th>Uwagi</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="panel page-break-soft">
+          <h3>7. Plan znieczulenia</h3>
+          <div class="grid two">
+            <label>Premedykacja<textarea id="planPremed" rows="3"></textarea></label>
+            <label>Indukcja<textarea id="planInduction" rows="3"></textarea></label>
+            <label>Podtrzymanie<textarea id="planMaintenance" rows="3"></textarea></label>
+            <label>Analgezja<textarea id="planAnalgesia" rows="3"></textarea></label>
+          </div>
+        </section>
+
+        <div class="two-col compact-gap">
+          <section class="panel">
+            <h3>Leki srodzabiegowe</h3>
+            <div class="table-wrap">
+              <table id="intraopTable">
+                <thead><tr><th>Lek</th><th>Dawka</th><th>Godzina</th><th>Uwagi</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="panel">
+            <h3>Dane zabiegu</h3>
+            <div class="grid one">
+              <label>Rozpoczecie zabiegu<input id="surgeryStart" type="text" /></label>
+              <label>Zakonczenie zabiegu<input id="surgeryEnd" type="text" /></label>
+              <label>Lekarz operujacy<input id="surgeon" type="text" /></label>
+              <label>Osoba asystujaca<input id="assistant" type="text" /></label>
+            </div>
+          </section>
+        </div>
+
+        <section class="panel">
+          <h3>Parametry podczas zabiegu</h3>
+          <div class="table-wrap">
+            <table id="vitalsTable">
+              <thead>
+                <tr><th>Czas</th><th>HR</th><th>SpO2</th><th>EtCO2</th><th>Temp</th><th>Cisnienie</th><th>MAC %</th></tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
