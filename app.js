@@ -1,275 +1,56 @@
-const STORAGE_KEY = 'techwet-anesthesia-records-v1';
-const SETTINGS_KEY = 'techwet-anesthesia-settings-v1';
-const PIN_KEY = 'techwet-anesthesia-pin-v1';
-const TIMES = ['0','5','10','15','20','25','30','35','40','45','50','55','60'];
+const APP_KEY='anestezjologia-techwet-v2';
+const PIN_KEY='anestezjologia-pin-v1';
+const AUTHOR='Tech.Wet Woroch Marcin';
+const APP_NAME='Anestezjologia';
+const defaultPin='123071';
 
-const defaultForm = () => ({
-  visitDate: new Date().toISOString().slice(0,10),
-  ownerName: '', animalName: '', species: '', breed: '', age: '', weight: '',
-  historyChronic: '', historyMedsAllergies: '', historyPrevAnesthesia: '',
-  generalState: 'Swiadomy',
-  temperament: { wesoly:false, agresywny:false, cichy:false, spokojny:false, niespokojny:false },
-  procedureAsa: '',
-  drugTable: Array.from({length:6}, () => ({name:'', dose:'', route:'', notes:''})),
-  planPremed: '', planInduction: '', planMaintenance: '', planAnalgesia: '',
-  intraopDrugs: Array.from({length:5}, () => ({name:'', dose:'', hour:'', notes:''})),
-  surgeryStart: '', surgeryEnd: '', surgeon: '', assistant: '',
-  vitals: TIMES.map(t => ({ time:t, hr:'', spo2:'', etco2:'', temp:'', pressure:'', mac:'' }))
+const vitalsTemplate=()=>[0,5,10,15,20,25,30,35,40,45,50,55,60].map(t=>({time:String(t),hr:'',spo2:'',etco2:'',temp:'',pressure:'',mac:''}));
+const drugRows=(n=6)=>Array.from({length:n},()=>({name:'',dose:'',route:'',notes:''}));
+const intraRows=(n=5)=>Array.from({length:n},()=>({name:'',dose:'',hour:'',notes:''}));
+const blankForm=()=>({
+  clinicName:AUTHOR,authorMark:`Autorstwo: ${AUTHOR}`,visitDate:new Date().toISOString().slice(0,10),
+  ownerName:'',animalName:'',species:'',breed:'',age:'',weight:'',historyChronic:'',historyMedsAllergies:'',historyPrevAnesthesia:'',
+  generalState:'Swiadomy',temperament:{wesoly:false,agresywny:false,cichy:false,spokojny:false,niespokojny:false},
+  procedureAsa:'',planPremed:'',planInduction:'',planMaintenance:'',planAnalgesia:'',surgeryStart:'',surgeryEnd:'',surgeon:'',assistant:'',
+  drugTable:drugRows(),intraopDrugs:intraRows(),vitals:vitalsTemplate(),createdAt:'',updatedAt:''
 });
-const defaultSettings = () => ({ watermark:'Tech.Wet Woroch Marcin', requirePin:true, pin:'123071' });
-
-let records = loadRecords();
-let settings = loadSettings();
-let currentId = null;
-let form = defaultForm();
-
-const $ = (id) => document.getElementById(id);
-
-function loadRecords(){ try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { return []; } }
-function saveRecords(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(records)); }
-function loadSettings(){
-  try { return { ...defaultSettings(), ...(JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}')) }; }
-  catch { return defaultSettings(); }
+let state={records:loadRecords(),selectedId:null,form:blankForm(),query:'',unlocked:false};
+function loadRecords(){try{return JSON.parse(localStorage.getItem(APP_KEY)||'[]')}catch{return []}}
+function saveRecords(){localStorage.setItem(APP_KEY,JSON.stringify(state.records))}
+function getPin(){return localStorage.getItem(PIN_KEY)||defaultPin}
+function setPin(v){localStorage.setItem(PIN_KEY,v)}
+function uid(){return Math.random().toString(36).slice(2,10)}
+if(state.records[0]){state.selectedId=state.records[0].id;state.form=state.records[0].data}
+function render(){document.getElementById('app').innerHTML=state.unlocked?mainView():loginView(); bind();}
+function loginView(){return `<div class="login"><div class="card"><div class="card-body"><div class="header"><img src="icons/icon-192.png" alt="Ikona aplikacji" style="width:54px;height:54px;border-radius:14px;object-fit:cover"><h1>${APP_NAME}</h1><div class="sub">${AUTHOR}</div></div><label class="label">PIN</label><input id="pinInput" type="password" inputmode="numeric" placeholder="Wpisz PIN"><button class="btn" id="unlockBtn" style="width:100%;margin-top:12px">Otworz aplikacje</button><div class="footer-note center">Prywatna wersja PWA na Androida</div></div></div></div>`}
+function temperamentText(t){return Object.entries(t).filter(([,v])=>v).map(([k])=>({wesoly:'Wesoly',agresywny:'Agresywny',cichy:'Cichy',spokojny:'Spokojny',niespokojny:'Niespokojny'}[k])).join(', ')}
+function filtered(){const q=state.query.trim().toLowerCase(); if(!q) return state.records; return state.records.filter(r=>[r.data.visitDate,r.data.animalName,r.data.ownerName,`${r.data.species}/${r.data.breed}`,r.data.weight,r.data.procedureAsa].join(' ').toLowerCase().includes(q));}
+function mainView(){return `<div class="app"><div class="layout"><div class="card no-print"><div class="card-body"><h3>Karty pacjentow</h3><input id="searchInput" placeholder="Szukaj..." value="${escapeHtml(state.query)}"><div style="height:12px"></div><button class="btn" id="newBtn" style="width:100%">Nowa karta</button><div style="height:14px"></div>${filtered().map(r=>`<div class="record ${state.selectedId===r.id?'active':''}" data-open="${r.id}"><div><strong>${escapeHtml(r.data.animalName||'Pacjent')}</strong></div><div class="small">${escapeHtml(r.data.visitDate||'')} • ${escapeHtml(r.data.ownerName||'')}</div><div class="badges"><span class="badge">${escapeHtml((r.data.species||'')+(r.data.breed?` / ${r.data.breed}`:''))}</span><span class="badge">${escapeHtml(r.data.weight||'')}</span></div><div class="small" style="margin-top:6px">${escapeHtml(r.data.procedureAsa||'')}</div><div style="display:flex;gap:6px;margin-top:8px"><button class="btn secondary openBtn" data-open="${r.id}" type="button">Otworz</button><button class="btn danger delBtn" data-del="${r.id}" type="button">Usun</button></div></div>`).join('')}<div style="margin-top:16px;padding-top:12px;border-top:1px solid #e2e8f0"><div class="small"><strong>Prywatnosc i kopia</strong></div><div style="height:8px"></div><button class="btn secondary" id="exportBtn" style="width:100%">Eksport kopii</button><div style="height:8px"></div><label class="btn secondary" style="display:block;text-align:center">Import kopii<input id="importInput" type="file" accept="application/json" style="display:none"></label><div style="height:8px"></div><label class="label">PIN aplikacji</label><input id="pinChange" type="password" inputmode="numeric" value="${escapeHtml(getPin())}"></div></div></div><div><div class="toolbar no-print"><button class="btn" id="saveBtn">Zapisz</button><button class="btn secondary" id="printBtn">Drukuj / PDF</button><button class="btn secondary" id="samePatientBtn">Nowa karta tego pacjenta</button></div><div class="card"><div class="card-body"><div class="header"><div class="sub">${escapeHtml(state.form.clinicName)}</div><h1>${APP_NAME}</h1><div class="sub">Autorstwo: ${AUTHOR}</div></div><div class="grid g4"><div><label class="label">Data karty</label><input data-field="visitDate" type="date" value="${escapeHtml(state.form.visitDate)}"></div><div><label class="label">Oznaczenie autorstwa</label><input value="${escapeHtml(state.form.authorMark)}" readonly></div><div><label class="label">Stan ogolny</label><select data-field="generalState"><option ${sel('Swiadomy')}>Swiadomy</option><option ${sel('Nieswiadomy')}>Nieswiadomy</option><option ${sel('Otepialy')}>Otepialy</option></select></div></div><div style="height:16px"></div><div class="grid g2"><div><label class="label">Imie i nazwisko wlasciciela</label><input data-field="ownerName" value="${escapeHtml(state.form.ownerName)}"></div><div><label class="label">Imie zwierzecia</label><input data-field="animalName" value="${escapeHtml(state.form.animalName)}"></div><div><label class="label">Gatunek</label><select data-field="species"><option value=""></option><option ${speciesSel('Pies')}>Pies</option><option ${speciesSel('Kot')}>Kot</option><option ${speciesSel('Krolik')}>Krolik</option></select></div><div><label class="label">Rasa</label><input data-field="breed" value="${escapeHtml(state.form.breed)}"></div><div><label class="label">Wiek</label><input data-field="age" type="number" inputmode="numeric" value="${escapeHtml(state.form.age)}"></div><div><label class="label">Waga</label><input data-field="weight" type="number" inputmode="decimal" step="0.1" value="${escapeHtml(state.form.weight)}"></div></div><div style="height:16px"></div><div class="grid g2"><div><label class="label">Choroby przewlekle</label><textarea data-field="historyChronic">${escapeHtml(state.form.historyChronic)}</textarea></div><div><label class="label">Leki / alergie</label><textarea data-field="historyMedsAllergies">${escapeHtml(state.form.historyMedsAllergies)}</textarea></div></div><div style="height:16px"></div><label class="label">Poprzednie znieczulenia</label><textarea data-field="historyPrevAnesthesia">${escapeHtml(state.form.historyPrevAnesthesia)}</textarea><div style="height:16px"></div><div class="card"><div class="card-body"><h3>Charakter</h3><div class="grid g4">${['wesoly','agresywny','cichy','spokojny','niespokojny'].map(k=>`<label><input type="checkbox" data-temp="${k}" ${state.form.temperament[k]?'checked':''}> ${cap(k)}</label>`).join('')}</div></div></div><div style="height:16px"></div><label class="label">Rodzaj zabiegu + ASA</label><input data-field="procedureAsa" value="${escapeHtml(state.form.procedureAsa)}"><div style="height:16px"></div>${drugTable('Dawki lekow',state.form.drugTable,false)}<div style="height:16px"></div><div class="grid g2"><div><label class="label">Premedykacja</label><textarea data-field="planPremed">${escapeHtml(state.form.planPremed)}</textarea></div><div><label class="label">Indukcja</label><textarea data-field="planInduction">${escapeHtml(state.form.planInduction)}</textarea></div><div><label class="label">Podtrzymanie</label><textarea data-field="planMaintenance">${escapeHtml(state.form.planMaintenance)}</textarea></div><div><label class="label">Analgezja</label><textarea data-field="planAnalgesia">${escapeHtml(state.form.planAnalgesia)}</textarea></div></div><div style="height:16px"></div><div class="grid g2"><div><label class="label">Rozpoczecie zabiegu</label><input data-field="surgeryStart" type="number" inputmode="numeric" value="${escapeHtml(state.form.surgeryStart)}"></div><div><label class="label">Zakonczenie zabiegu</label><input data-field="surgeryEnd" type="number" inputmode="numeric" value="${escapeHtml(state.form.surgeryEnd)}"></div><div><label class="label">Lekarz operujacy</label><input data-field="surgeon" value="${escapeHtml(state.form.surgeon)}"></div><div><label class="label">Asysta</label><input data-field="assistant" value="${escapeHtml(state.form.assistant)}"></div></div><div style="height:16px"></div>${drugTable('Leki srodzabiegowe',state.form.intraopDrugs,true)}<div style="height:16px"></div>${vitalsTable()}</div></div></div></div></div>`}
+function speciesSel(v){return state.form.species===v?'selected':''}
+function sel(v){return state.form.generalState===v?'selected':''}
+function drugTable(title,rows,intra){return `<div class="card"><div class="card-body"><h3>${title}</h3><div class="table-wrap"><table class="data-table"><thead><tr><th>Lek</th><th>Dawka</th><th>${intra?'Godzina':'Droga'}</th><th>Uwagi</th></tr></thead><tbody>${rows.map((r,i)=>`<tr><td><input data-drug="${intra?'intra':'main'}" data-idx="${i}" data-key="name" value="${escapeHtml(r.name)}"></td><td><input type="number" inputmode="decimal" data-drug="${intra?'intra':'main'}" data-idx="${i}" data-key="dose" value="${escapeHtml(r.dose)}"></td><td>${intra?`<input type="number" inputmode="numeric" data-drug="intra" data-idx="${i}" data-key="hour" value="${escapeHtml(r.hour)}">`:`<select data-drug="main" data-idx="${i}" data-key="route"><option value=""></option><option ${r.route==='SC'?'selected':''}>SC</option><option ${r.route==='IM'?'selected':''}>IM</option><option ${r.route==='IV'?'selected':''}>IV</option></select>`}</td><td><input data-drug="${intra?'intra':'main'}" data-idx="${i}" data-key="notes" value="${escapeHtml(r.notes)}"></td></tr>`).join('')}</tbody></table></div></div></div>`}
+function vitalsTable(){return `<div class="card"><div class="card-body"><h3>Parametry podczas zabiegu</h3><div class="table-wrap"><table class="data-table"><thead><tr><th>Czas</th><th>HR</th><th>SpO2</th><th>EtCO2</th><th>Temp</th><th>Cisnienie</th><th>MAC %</th></tr></thead><tbody>${state.form.vitals.map((r,i)=>`<tr><td class="center">${r.time}</td>${['hr','spo2','etco2','temp','pressure','mac'].map(k=>`<td><input type="number" inputmode="decimal" data-vitals="${i}" data-key="${k}" value="${escapeHtml(r[k])}"></td>`).join('')}</tr>`).join('')}</tbody></table></div></div></div>`}
+function bind(){if(!state.unlocked){document.getElementById('unlockBtn').onclick=()=>{if(document.getElementById('pinInput').value===getPin()){state.unlocked=true;render()}else alert('Nieprawidlowy PIN.')}; return}
+ document.querySelectorAll('[data-field]').forEach(el=>el.oninput=e=>{state.form[e.target.dataset.field]=e.target.value});
+ document.querySelectorAll('[data-temp]').forEach(el=>el.onchange=e=>{state.form.temperament[e.target.dataset.temp]=e.target.checked});
+ document.querySelectorAll('[data-drug]').forEach(el=>el.oninput=e=>{const type=e.target.dataset.drug==='intra'?'intraopDrugs':'drugTable'; const idx=+e.target.dataset.idx; const key=e.target.dataset.key; state.form[type][idx][key]=e.target.value});
+ document.querySelectorAll('[data-drug] select').forEach(el=>el.onchange=e=>{const idx=+e.target.dataset.idx; state.form.drugTable[idx][e.target.dataset.key]=e.target.value});
+ document.querySelectorAll('[data-vitals]').forEach(el=>el.oninput=e=>{state.form.vitals[+e.target.dataset.vitals][e.target.dataset.key]=e.target.value});
+ const s=document.getElementById('searchInput'); if(s)s.oninput=e=>{state.query=e.target.value; render()};
+ const n=document.getElementById('newBtn'); if(n)n.onclick=()=>{state.selectedId=null; state.form=blankForm(); render()};
+ const sv=document.getElementById('saveBtn'); if(sv)sv.onclick=saveCurrent;
+ const pr=document.getElementById('printBtn'); if(pr)pr.onclick=()=>window.print();
+ const same=document.getElementById('samePatientBtn'); if(same)same.onclick=()=>{const f=state.form; state.selectedId=null; state.form=blankForm(); Object.assign(state.form,{ownerName:f.ownerName,animalName:f.animalName,species:f.species,breed:f.breed,age:f.age,weight:f.weight}); render()};
+ document.querySelectorAll('[data-open]').forEach(b=>b.onclick=(e)=>{const id=e.currentTarget.dataset.open; const rec=state.records.find(r=>r.id===id); if(rec){state.selectedId=id; state.form=JSON.parse(JSON.stringify(rec.data)); render()}});
+ document.querySelectorAll('[data-del]').forEach(b=>b.onclick=(e)=>{e.stopPropagation(); if(confirm('Usunac te karte?')){state.records=state.records.filter(r=>r.id!==e.currentTarget.dataset.del); saveRecords(); if(state.selectedId===e.currentTarget.dataset.del){state.selectedId=null; state.form=blankForm()} render()}});
+ const ex=document.getElementById('exportBtn'); if(ex)ex.onclick=exportBackup;
+ const im=document.getElementById('importInput'); if(im)im.onchange=(e)=>importBackup(e.target.files[0]);
+ const pc=document.getElementById('pinChange'); if(pc)pc.onchange=(e)=>setPin(e.target.value||defaultPin);
 }
-function saveSettings(){ localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); localStorage.setItem(PIN_KEY, settings.pin); }
-function currentPin(){ return localStorage.getItem(PIN_KEY) || settings.pin || '123071'; }
-function uid(){ return Math.random().toString(36).slice(2,10); }
-
-function bindSimpleFields(){
-  const fields = ['visitDate','ownerName','animalName','species','breed','age','weight','historyChronic','historyMedsAllergies','historyPrevAnesthesia','generalState','procedureAsa','planPremed','planInduction','planMaintenance','planAnalgesia','surgeryStart','surgeryEnd','surgeon','assistant'];
-  fields.forEach(id => $(id).addEventListener('input', e => form[id] = e.target.value));
-  ['wesoly','agresywny','cichy','spokojny','niespokojny'].forEach(key => {
-    $(`t_${key}`).addEventListener('change', e => form.temperament[key] = e.target.checked);
-  });
-}
-
-function renderDrugTables(){
-  renderEditableTable('drugTable', form.drugTable, ['name','dose','route','notes']);
-  renderEditableTable('intraopTable', form.intraopDrugs, ['name','dose','hour','notes']);
-}
-function renderEditableTable(tableId, rows, keys){
-  const tbody = document.querySelector(`#${tableId} tbody`);
-  tbody.innerHTML = '';
-  rows.forEach((row, i) => {
-    const tr = document.createElement('tr');
-    keys.forEach(key => {
-      const td = document.createElement('td');
-      const input = document.createElement('input');
-      input.value = row[key] || '';
-      input.addEventListener('input', e => row[key] = e.target.value);
-      td.appendChild(input);
-      tr.appendChild(td);
-    });
-    tbody.appendChild(tr);
-  });
-}
-
-function renderVitalsTable(){
-  const tbody = document.querySelector('#vitalsTable tbody');
-  tbody.innerHTML = '';
-  form.vitals.forEach((row, i) => {
-    const tr = document.createElement('tr');
-    const timeTd = document.createElement('td');
-    timeTd.textContent = row.time;
-    tr.appendChild(timeTd);
-    ['hr','spo2','etco2','temp','pressure','mac'].forEach(key => {
-      const td = document.createElement('td');
-      const input = document.createElement('input');
-      input.value = row[key] || '';
-      input.addEventListener('input', e => row[key] = e.target.value);
-      td.appendChild(input);
-      tr.appendChild(td);
-    });
-    tbody.appendChild(tr);
-  });
-}
-
-function applyFormToUI(){
-  Object.entries(form).forEach(([key, value]) => {
-    const el = $(key);
-    if (el && typeof value !== 'object') el.value = value || '';
-  });
-  ['wesoly','agresywny','cichy','spokojny','niespokojny'].forEach(key => {
-    $(`t_${key}`).checked = !!form.temperament[key];
-  });
-  $('watermarkPreview').textContent = settings.watermark;
-  renderDrugTables();
-  renderVitalsTable();
-}
-
-function recordLabel(r){
-  const d = r.data;
-  return `${d.animalName || 'Pacjent'} • ${d.ownerName || 'brak wlasciciela'}`;
-}
-
-function renderHistory(filter=''){
-  const list = $('historyList');
-  list.innerHTML = '';
-  const q = filter.trim().toLowerCase();
-  const filtered = records.filter(r => {
-    const d = r.data;
-    return [d.ownerName, d.animalName, d.species, d.breed, d.weight, d.procedureAsa, d.visitDate].join(' ').toLowerCase().includes(q);
-  });
-  if (!filtered.length) {
-    list.innerHTML = '<div class="history-item"><small>Brak zapisanych kart.</small></div>';
-    return;
-  }
-  filtered.forEach(r => {
-    const d = r.data;
-    const item = document.createElement('div');
-    item.className = 'history-item' + (r.id === currentId ? ' active' : '');
-    item.innerHTML = `
-      <strong>${escapeHtml(recordLabel(r))}</strong>
-      <small>${escapeHtml(d.visitDate || '')}</small>
-      <div class="meta">
-        ${d.species ? `<span class="tag">${escapeHtml(d.species)}/${escapeHtml(d.breed || '')}</span>` : ''}
-        ${d.weight ? `<span class="tag">${escapeHtml(d.weight)} kg</span>` : ''}
-        ${d.procedureAsa ? `<span class="tag">${escapeHtml(d.procedureAsa)}</span>` : ''}
-      </div>
-      <div class="history-actions">
-        <button data-open="${r.id}" class="secondary">Otworz</button>
-        <button data-delete="${r.id}" class="secondary">Usun</button>
-      </div>`;
-    list.appendChild(item);
-  });
-
-  list.querySelectorAll('[data-open]').forEach(btn => btn.addEventListener('click', () => openRecord(btn.dataset.open)));
-  list.querySelectorAll('[data-delete]').forEach(btn => btn.addEventListener('click', () => deleteRecord(btn.dataset.delete)));
-}
-
-function openRecord(id){
-  const rec = records.find(r => r.id === id);
-  if (!rec) return;
-  currentId = id;
-  form = structuredClone(rec.data);
-  applyFormToUI();
-  renderHistory($('searchInput').value);
-}
-
-function saveCurrent(){
-  if (!form.animalName && !form.ownerName) { alert('Uzupelnij przynajmniej imie zwierzecia lub wlasciciela.'); return; }
-  const now = new Date().toISOString();
-  if (currentId) {
-    records = records.map(r => r.id === currentId ? { ...r, data: { ...form, updatedAt: now } } : r);
-  } else {
-    currentId = uid();
-    records.unshift({ id: currentId, data: { ...form, createdAt: now, updatedAt: now } });
-  }
-  saveRecords();
-  renderHistory($('searchInput').value);
-  alert('Karta zapisana.');
-}
-
-function deleteRecord(id){
-  if (!confirm('Usunac te karte?')) return;
-  records = records.filter(r => r.id !== id);
-  if (currentId === id) { currentId = null; form = defaultForm(); applyFormToUI(); }
-  saveRecords();
-  renderHistory($('searchInput').value);
-}
-
-function newRecord(copyPatient=false){
-  const old = form;
-  currentId = null;
-  form = defaultForm();
-  if (copyPatient) {
-    Object.assign(form, {
-      ownerName: old.ownerName,
-      animalName: old.animalName,
-      species: old.species,
-      breed: old.breed,
-      age: old.age,
-      weight: old.weight,
-    });
-  }
-  applyFormToUI();
-  renderHistory($('searchInput').value);
-}
-
-function exportBackup(){
-  const blob = new Blob([JSON.stringify(records, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `anestezjologia-backup-${new Date().toISOString().slice(0,10)}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-function importBackup(file){
-  const reader = new FileReader();
-  reader.onload = () => {
-    try {
-      const parsed = JSON.parse(reader.result);
-      if (!Array.isArray(parsed)) throw new Error();
-      records = parsed;
-      saveRecords();
-      if (records[0]) openRecord(records[0].id);
-      else { form = defaultForm(); applyFormToUI(); }
-      renderHistory();
-      alert('Kopia zapasowa zostala wczytana.');
-    } catch {
-      alert('Nie udalo sie wczytac kopii.');
-    }
-  };
-  reader.readAsText(file);
-}
-
-function escapeHtml(s){ return String(s || '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
-
-function unlock(){
-  const pin = $('pinInput').value;
-  if (pin === currentPin()) {
-    $('lockScreen').classList.add('hidden');
-    $('app').classList.remove('hidden');
-  } else {
-    alert('Nieprawidlowy PIN.');
-  }
-}
-
-function applySettingsToUI(){
-  $('requirePinToggle').checked = !!settings.requirePin;
-  $('watermarkInput').value = settings.watermark || '';
-  $('pinSettingsInput').value = currentPin();
-  $('watermarkPreview').textContent = settings.watermark || '';
-}
-
-function init(){
-  bindSimpleFields();
-  renderDrugTables();
-  renderVitalsTable();
-  applySettingsToUI();
-
-  $('unlockBtn').addEventListener('click', unlock);
-  $('pinInput').addEventListener('keydown', e => { if (e.key === 'Enter') unlock(); });
-
-  if (!settings.requirePin) {
-    $('lockScreen').classList.add('hidden');
-    $('app').classList.remove('hidden');
-  }
-
-  $('newRecordBtn').addEventListener('click', () => newRecord(false));
-  $('samePatientBtn').addEventListener('click', () => newRecord(true));
-  $('saveBtn').addEventListener('click', saveCurrent);
-  $('printBtn').addEventListener('click', () => window.print());
-  $('searchInput').addEventListener('input', e => renderHistory(e.target.value));
-  $('exportBtn').addEventListener('click', exportBackup);
-  $('importInput').addEventListener('change', e => e.target.files[0] && importBackup(e.target.files[0]));
-  $('requirePinToggle').addEventListener('change', e => { settings.requirePin = e.target.checked; saveSettings(); });
-  $('watermarkInput').addEventListener('input', e => { settings.watermark = e.target.value; saveSettings(); $('watermarkPreview').textContent = settings.watermark; });
-  $('pinSettingsInput').addEventListener('change', e => { settings.pin = e.target.value || '123071'; saveSettings(); });
-
-  if (records[0]) {
-    openRecord(records[0].id);
-  } else {
-    form = defaultForm();
-    applyFormToUI();
-    renderHistory();
-  }
-
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
-  }
-}
-
-init();
+function saveCurrent(){const now=new Date().toISOString(); if(state.selectedId){state.records=state.records.map(r=>r.id===state.selectedId?{...r,data:{...state.form,updatedAt:now,createdAt:state.form.createdAt||now}}:r)} else {const id=uid(); state.selectedId=id; state.records.unshift({id,data:{...state.form,createdAt:now,updatedAt:now}})} saveRecords(); alert('Zapisano'); render()}
+function exportBackup(){const blob=new Blob([JSON.stringify(state.records,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`anestezjologia-backup-${new Date().toISOString().slice(0,10)}.json`; a.click(); URL.revokeObjectURL(a.href)}
+function importBackup(file){if(!file)return; const fr=new FileReader(); fr.onload=()=>{try{const data=JSON.parse(fr.result); if(!Array.isArray(data)) throw new Error(); state.records=data; saveRecords(); if(data[0]){state.selectedId=data[0].id; state.form=data[0].data} alert('Import udany'); render()}catch{alert('Nie udalo sie wczytac kopii.')}}; fr.readAsText(file)}
+function cap(s){return ({wesoly:'Wesoly',agresywny:'Agresywny',cichy:'Cichy',spokojny:'Spokojny',niespokojny:'Niespokojny'})[s]||s}
+function escapeHtml(s=''){return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;')}
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}))}
+render();
