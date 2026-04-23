@@ -2493,8 +2493,8 @@ function renderPrintableCardMarkup(form) {
       color: #000;
       background: #fff;
       font-family: Arial, Helvetica, sans-serif;
-      font-size: 10.5px;
-      line-height: 1.25;
+      font-size: 12px;
+      line-height: 1.35;
     ">
       <div style="text-align:center;border-bottom:1px solid #000;padding-bottom:5px;margin-bottom:6px;">
         <div style="font-size:10px;">${escapeHtml(form.clinicName || AUTHOR)}</div>
@@ -2502,14 +2502,14 @@ function renderPrintableCardMarkup(form) {
         <div style="font-size:10px;">${escapeHtml(form.authorMark || `Autorstwo: ${AUTHOR}`)}</div>
       </div>
 
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-bottom:5px;">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-bottom:8px;">
         <div><strong>Data:</strong> ${escapeHtml(form.visitDate || '-')}</div>
         <div><strong>Stan:</strong> ${escapeHtml(form.generalState || '-')}</div>
         <div><strong>Zabieg / ASA:</strong> ${escapeHtml(form.procedureAsa || '-')}</div>
       </div>
 
       <div style="border:1px solid #000;padding:5px;margin-bottom:5px;">
-        <div style="font-weight:700;font-size:12px;margin-bottom:3px;">Pacjent i właściciel</div>
+        <div style="font-weight:700;font-size:14px;margin-bottom:3px;">Pacjent i właściciel</div>
         <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:3px 8px;">
           <div><strong>Właściciel:</strong> ${escapeHtml(form.ownerName || '-')}</div>
           <div><strong>Pacjent:</strong> ${escapeHtml(form.animalName || '-')}</div>
@@ -2576,7 +2576,7 @@ function renderPrintableCardMarkup(form) {
 
       <div style="margin-bottom:5px;">
         <div style="font-weight:700;font-size:12px;margin-bottom:3px;">Dawki leków</div>
-        <table style="width:100%;border-collapse:collapse;font-size:9.5px;">
+        <table style="width:100%;border-collapse:collapse;font-size:11px;">
           <thead>
             <tr>
               <th style="border:1px solid #000;padding:2px;text-align:left;">Lek</th>
@@ -2596,7 +2596,7 @@ function renderPrintableCardMarkup(form) {
         <table style="width:100%;border-collapse:collapse;font-size:9.5px;">
           <thead>
             <tr>
-              <th style="border:1px solid #000;padding:2px;text-align:left;">Lek</th>
+              <th style="border:1px solid #000;padding:4px;text-align:left;">Lek</th>
               <th style="border:1px solid #000;padding:2px;text-align:left;">Dawka</th>
               <th style="border:1px solid #000;padding:2px;text-align:left;">Godzina</th>
               <th style="border:1px solid #000;padding:2px;text-align:left;">Uwagi</th>
