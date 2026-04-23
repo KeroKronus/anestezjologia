@@ -2487,207 +2487,149 @@ function renderPrintableVitalsRows(rows) {
 function renderPrintableCardMarkup(form) {
   return `
     <div style="
-      max-width:1100px;
-      margin:0 auto;
-      color:#000;
-      background:#fff;
-      font-family:Arial, Helvetica, sans-serif;
-      line-height:1.4;
+      width: 190mm;
+      margin: 0 auto;
+      padding: 0;
+      color: #000;
+      background: #fff;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 10.5px;
+      line-height: 1.25;
     ">
-      <div style="border-bottom:2px solid var(--border);padding-bottom:12px;margin-bottom:18px;text-align:center;">
-        <div class="sub">${escapeHtml(form.clinicName || AUTHOR)}</div>
-        <h1 style="margin:8px 0 8px;font-size:28px;">${APP_NAME}</h1>
-        <div class="sub">${escapeHtml(form.authorMark || `Autorstwo: ${AUTHOR}`)}</div>
+      <div style="text-align:center;border-bottom:1px solid #000;padding-bottom:5px;margin-bottom:6px;">
+        <div style="font-size:10px;">${escapeHtml(form.clinicName || AUTHOR)}</div>
+        <h1 style="margin:2px 0;font-size:20px;line-height:1.1;">${APP_NAME}</h1>
+        <div style="font-size:10px;">${escapeHtml(form.authorMark || `Autorstwo: ${AUTHOR}`)}</div>
       </div>
 
-      <div class="card inner-card" style="margin-bottom:16px;">
-        <div class="card-body">
-          <h3>Dane podstawowe</h3>
-          <div class="grid g4">
-            <div>
-              <label class="label">Data karty</label>
-              <div>${escapeHtml(form.visitDate || '-')}</div>
-            </div>
-            <div>
-              <label class="label">Stan ogólny</label>
-              <div>${escapeHtml(form.generalState || '-')}</div>
-            </div>
-            <div>
-              <label class="label">Rodzaj zabiegu + ASA</label>
-              <div>${escapeHtml(form.procedureAsa || '-')}</div>
-            </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-bottom:5px;">
+        <div><strong>Data:</strong> ${escapeHtml(form.visitDate || '-')}</div>
+        <div><strong>Stan:</strong> ${escapeHtml(form.generalState || '-')}</div>
+        <div><strong>Zabieg / ASA:</strong> ${escapeHtml(form.procedureAsa || '-')}</div>
+      </div>
+
+      <div style="border:1px solid #000;padding:5px;margin-bottom:5px;">
+        <div style="font-weight:700;font-size:12px;margin-bottom:3px;">Pacjent i właściciel</div>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:3px 8px;">
+          <div><strong>Właściciel:</strong> ${escapeHtml(form.ownerName || '-')}</div>
+          <div><strong>Pacjent:</strong> ${escapeHtml(form.animalName || '-')}</div>
+          <div><strong>Gatunek:</strong> ${escapeHtml(form.species || '-')}</div>
+          <div><strong>Rasa:</strong> ${escapeHtml(form.breed || '-')}</div>
+          <div><strong>Wiek:</strong> ${escapeHtml(form.age || '-')}</div>
+          <div><strong>Waga:</strong> ${escapeHtml(form.weight || '-')}</div>
+        </div>
+      </div>
+
+      <div style="border:1px solid #000;padding:5px;margin-bottom:5px;">
+        <div style="font-weight:700;font-size:12px;margin-bottom:3px;">Wywiad</div>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:4px 8px;">
+          <div>
+            <strong>Choroby przewlekłe:</strong>
+            <div style="white-space:pre-wrap;">${escapeHtml(form.historyChronic || '-')}</div>
+          </div>
+          <div>
+            <strong>Leki / alergie:</strong>
+            <div style="white-space:pre-wrap;">${escapeHtml(form.historyMedsAllergies || '-')}</div>
+          </div>
+          <div>
+            <strong>Poprzednie znieczulenia:</strong>
+            <div style="white-space:pre-wrap;">${escapeHtml(form.historyPrevAnesthesia || '-')}</div>
+          </div>
+          <div>
+            <strong>Charakter:</strong>
+            <div>${escapeHtml(formatTemperament(form.temperament))}</div>
           </div>
         </div>
       </div>
 
-      <div class="card inner-card" style="margin-bottom:16px;">
-        <div class="card-body">
-          <h3>Pacjent i właściciel</h3>
-          <div class="grid g2">
-            <div>
-              <label class="label">Imię i nazwisko właściciela</label>
-              <div>${escapeHtml(form.ownerName || '-')}</div>
-            </div>
-            <div>
-              <label class="label">Imię zwierzęcia</label>
-              <div>${escapeHtml(form.animalName || '-')}</div>
-            </div>
-            <div>
-              <label class="label">Gatunek</label>
-              <div>${escapeHtml(form.species || '-')}</div>
-            </div>
-            <div>
-              <label class="label">Rasa</label>
-              <div>${escapeHtml(form.breed || '-')}</div>
-            </div>
-            <div>
-              <label class="label">Wiek</label>
-              <div>${escapeHtml(form.age || '-')}</div>
-            </div>
-            <div>
-              <label class="label">Waga</label>
-              <div>${escapeHtml(form.weight || '-')}</div>
-            </div>
+      <div style="border:1px solid #000;padding:5px;margin-bottom:5px;">
+        <div style="font-weight:700;font-size:12px;margin-bottom:3px;">Plan znieczulenia</div>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:4px 8px;">
+          <div>
+            <strong>Premedykacja:</strong>
+            <div style="white-space:pre-wrap;">${escapeHtml(form.planPremed || '-')}</div>
+          </div>
+          <div>
+            <strong>Indukcja:</strong>
+            <div style="white-space:pre-wrap;">${escapeHtml(form.planInduction || '-')}</div>
+          </div>
+          <div>
+            <strong>Podtrzymanie:</strong>
+            <div style="white-space:pre-wrap;">${escapeHtml(form.planMaintenance || '-')}</div>
+          </div>
+          <div>
+            <strong>Analgezja:</strong>
+            <div style="white-space:pre-wrap;">${escapeHtml(form.planAnalgesia || '-')}</div>
           </div>
         </div>
       </div>
 
-      <div class="card inner-card" style="margin-bottom:16px;">
-        <div class="card-body">
-          <h3>Wywiad</h3>
-          <div class="grid g2">
-            <div>
-              <label class="label">Choroby przewlekłe</label>
-              <div style="white-space:pre-wrap;">${escapeHtml(form.historyChronic || '-')}</div>
-            </div>
-            <div>
-              <label class="label">Leki / alergie</label>
-              <div style="white-space:pre-wrap;">${escapeHtml(form.historyMedsAllergies || '-')}</div>
-            </div>
-            <div>
-              <label class="label">Poprzednie znieczulenia</label>
-              <div style="white-space:pre-wrap;">${escapeHtml(form.historyPrevAnesthesia || '-')}</div>
-            </div>
-            <div>
-              <label class="label">Charakter</label>
-              <div>${escapeHtml(formatTemperament(form.temperament))}</div>
-            </div>
-          </div>
+      <div style="border:1px solid #000;padding:5px;margin-bottom:5px;">
+        <div style="font-weight:700;font-size:12px;margin-bottom:3px;">Przebieg zabiegu</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;">
+          <div><strong>Start:</strong> ${escapeHtml(form.surgeryStart || '-')}</div>
+          <div><strong>Koniec:</strong> ${escapeHtml(form.surgeryEnd || '-')}</div>
+          <div><strong>Lekarz:</strong> ${escapeHtml(form.surgeon || '-')}</div>
+          <div><strong>Asysta:</strong> ${escapeHtml(form.assistant || '-')}</div>
         </div>
       </div>
 
-      <div class="card inner-card" style="margin-bottom:16px;">
-        <div class="card-body">
-          <h3>Plan znieczulenia</h3>
-          <div class="grid g2">
-            <div>
-              <label class="label">Premedykacja</label>
-              <div style="white-space:pre-wrap;">${escapeHtml(form.planPremed || '-')}</div>
-            </div>
-            <div>
-              <label class="label">Indukcja</label>
-              <div style="white-space:pre-wrap;">${escapeHtml(form.planInduction || '-')}</div>
-            </div>
-            <div>
-              <label class="label">Podtrzymanie</label>
-              <div style="white-space:pre-wrap;">${escapeHtml(form.planMaintenance || '-')}</div>
-            </div>
-            <div>
-              <label class="label">Analgezja</label>
-              <div style="white-space:pre-wrap;">${escapeHtml(form.planAnalgesia || '-')}</div>
-            </div>
-          </div>
-        </div>
+      <div style="margin-bottom:5px;">
+        <div style="font-weight:700;font-size:12px;margin-bottom:3px;">Dawki leków</div>
+        <table style="width:100%;border-collapse:collapse;font-size:9.5px;">
+          <thead>
+            <tr>
+              <th style="border:1px solid #000;padding:2px;text-align:left;">Lek</th>
+              <th style="border:1px solid #000;padding:2px;text-align:left;">Dawka</th>
+              <th style="border:1px solid #000;padding:2px;text-align:left;">Droga</th>
+              <th style="border:1px solid #000;padding:2px;text-align:left;">Uwagi</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${renderPrintableDrugRows(form.drugTable, false)}
+          </tbody>
+        </table>
       </div>
 
-      <div class="card inner-card" style="margin-bottom:16px;">
-        <div class="card-body">
-          <h3>Przebieg zabiegu</h3>
-          <div class="grid g2">
-            <div>
-              <label class="label">Rozpoczęcie zabiegu</label>
-              <div>${escapeHtml(form.surgeryStart || '-')}</div>
-            </div>
-            <div>
-              <label class="label">Zakończenie zabiegu</label>
-              <div>${escapeHtml(form.surgeryEnd || '-')}</div>
-            </div>
-            <div>
-              <label class="label">Lekarz operujący</label>
-              <div>${escapeHtml(form.surgeon || '-')}</div>
-            </div>
-            <div>
-              <label class="label">Asysta</label>
-              <div>${escapeHtml(form.assistant || '-')}</div>
-            </div>
-          </div>
-        </div>
+      <div style="margin-bottom:5px;">
+        <div style="font-weight:700;font-size:12px;margin-bottom:3px;">Leki śródzabiegowe</div>
+        <table style="width:100%;border-collapse:collapse;font-size:9.5px;">
+          <thead>
+            <tr>
+              <th style="border:1px solid #000;padding:2px;text-align:left;">Lek</th>
+              <th style="border:1px solid #000;padding:2px;text-align:left;">Dawka</th>
+              <th style="border:1px solid #000;padding:2px;text-align:left;">Godzina</th>
+              <th style="border:1px solid #000;padding:2px;text-align:left;">Uwagi</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${renderPrintableDrugRows(form.intraopDrugs, true)}
+          </tbody>
+        </table>
       </div>
 
-      <div class="card inner-card" style="margin-bottom:16px;">
-        <div class="card-body">
-          <h3>Dawki leków</h3>
-          <div class="table-wrap mobile-table-wrap">
-            <table class="data-table compact-table">
-              <thead>
-                <tr>
-                  <th>Lek</th>
-                  <th>Dawka</th>
-                  <th>Droga</th>
-                  <th>Uwagi</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${renderPrintableDrugRows(form.drugTable, false)}
-              </tbody>
-            </table>
-          </div>
-        </div>
+      <div>
+        <div style="font-weight:700;font-size:12px;margin-bottom:3px;">Parametry podczas zabiegu</div>
+        <table style="width:100%;border-collapse:collapse;font-size:8.5px;">
+          <thead>
+            <tr>
+              <th style="border:1px solid #000;padding:2px;">Czas</th>
+              <th style="border:1px solid #000;padding:2px;">HR</th>
+              <th style="border:1px solid #000;padding:2px;">SpO2</th>
+              <th style="border:1px solid #000;padding:2px;">EtCO2</th>
+              <th style="border:1px solid #000;padding:2px;">Temp</th>
+              <th style="border:1px solid #000;padding:2px;">Ciśnienie</th>
+              <th style="border:1px solid #000;padding:2px;">MAC %</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${renderPrintableVitalsRows(form.vitals)}
+          </tbody>
+        </table>
       </div>
 
-      <div class="card inner-card" style="margin-bottom:16px;">
-        <div class="card-body">
-          <h3>Leki śródzabiegowe</h3>
-          <div class="table-wrap mobile-table-wrap">
-            <table class="data-table compact-table">
-              <thead>
-                <tr>
-                  <th>Lek</th>
-                  <th>Dawka</th>
-                  <th>Godzina</th>
-                  <th>Uwagi</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${renderPrintableDrugRows(form.intraopDrugs, true)}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <div class="card inner-card">
-        <div class="card-body">
-          <h3>Parametry podczas zabiegu</h3>
-          <div class="table-wrap mobile-table-wrap">
-            <table class="data-table compact-table vitals-table">
-              <thead>
-                <tr>
-                  <th>Czas</th>
-                  <th>HR</th>
-                  <th>SpO2</th>
-                  <th>EtCO2</th>
-                  <th>Temp</th>
-                  <th>Ciśnienie</th>
-                  <th>MAC %</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${renderPrintableVitalsRows(form.vitals)}
-              </tbody>
-            </table>
-          </div>
-        </div>
+      <div style="margin-top:5px;text-align:right;font-size:8px;">
+        Wygenerowano: ${escapeHtml(new Date().toLocaleString('pl-PL'))}
       </div>
     </div>
   `;
@@ -2712,23 +2654,36 @@ function generatePDF() {
     .replace(/[^a-z0-9\-ąćęłńóśźż]/gi, '');
 
   const opt = {
-    margin: 10,
+    margin: [4, 4, 4, 4],
     filename: `plan-anestezjologiczny-${patientName || 'pacjent'}-${new Date().toISOString().slice(0, 10)}.pdf`,
-    image: { type: 'jpeg', quality: 0.98 },
+    image: {
+      type: 'jpeg',
+      quality: 0.98
+    },
     html2canvas: {
-  scale: 2,
-  useCORS: true,
-  backgroundColor: '#ffffff'
-   },
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff',
+      scrollY: 0
+    },
     jsPDF: {
       unit: 'mm',
       format: 'a4',
       orientation: 'portrait'
     },
-    pagebreak: { mode: ['css', 'legacy'] }
+    pagebreak: {
+      mode: ['avoid-all', 'css', 'legacy']
+    }
   };
 
-  html2pdf().set(opt).from(element).save();
+  html2pdf()
+    .set(opt)
+    .from(element)
+    .save()
+    .catch((err) => {
+      console.error('Błąd PDF:', err);
+      alert('Nie udało się wygenerować PDF.');
+    });
 }
 
 document.addEventListener('visibilitychange', () => {

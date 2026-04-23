@@ -824,3 +824,25 @@ textarea {
   color: #000000 !important;
   font-weight: 700;
 }
+#pdfContent {
+  background: #ffffff !important;
+  color: #000000 !important;
+}
+
+#pdfContent * {
+  color: #000000 !important;
+  box-shadow: none !important;
+}
+
+#pdfContent table,
+#pdfContent th,
+#pdfContent td {
+  border-color: #000000 !important;
+}
+
+#pdfContent .card,
+#pdfContent .inner-card,
+#pdfContent .card-body {
+  background: #ffffff !important;
+  box-shadow: none !important;
+}
