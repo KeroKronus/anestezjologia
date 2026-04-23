@@ -1,46 +1,16 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pl">
 <head>
-<meta charset="UTF-8">
-<title>Anestezjologia PRO PDF</title>
-<link rel="stylesheet" href="styles.css?v=10">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#000000" />
+  <title>Anestezjologia</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icons/icon-192.png" />
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-
-<button onclick="generatePDF()">Pobierz PDF</button>
-
-<div id="printArea" class="page">
-
-<h1>KARTA ANESTEZJOLOGICZNA</h1>
-
-<div class="section">
-  <h2>Pacjent i właściciel</h2>
-  <div class="section-content">
-    Właściciel: Marcin Woroch<br>
-    Zwierzę: Glutek<br>
-    Gatunek: Pies<br>
-    Wiek: 3
-  </div>
-</div>
-
-<div class="section wywiad">
-  <h2>Wywiad</h2>
-  <div class="section-content">
-    Choroby: -<br>
-    Leki: -
-  </div>
-  <div class="fill-lines"></div>
-</div>
-
-<div class="section uwagi">
-  <h2>Uwagi końcowe</h2>
-  <div class="fill-lines"></div>
-</div>
-
-</div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-<script src="app.js?v=10"></script>
-
+  <div id="app"></div>
+  <script src="app.js"></script>
 </body>
 </html>
