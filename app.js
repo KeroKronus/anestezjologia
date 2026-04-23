@@ -2704,24 +2704,40 @@ function generatePDF() {
     .replace(/\s+/g, '-')
     .replace(/[^a-z0-9\-ąćęłńóśźż]/gi, '');
 
-  const opt = {
-    margin: 10,
-    filename: `plan-anestezjologiczny-${patientName || 'pacjent'}-${new Date().toISOString().slice(0, 10)}.pdf`,
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: {
-      scale: 2,
-      useCORS: true
-    },
-    jsPDF: {
-      unit: 'mm',
-      format: 'a4',
-      orientation: 'portrait'
-    },
-    pagebreak: { mode: ['css', 'legacy'] }
-  };
+const opt = {
+  margin: [5, 5, 5, 5],
+  filename: `plan-anestezjologiczny-${patientName}-${new Date().toISOString().slice(0, 10)}.pdf`,
+  image: { type: 'jpeg', quality: 1 },
+  html2canvas: { 
+    scale: 2,
+    scrollY: 0
+  },
+  jsPDF: { 
+    unit: 'mm', 
+    format: 'a4', 
+    orientation: 'portrait' 
+  },
+  pagebreak: { mode: ['css', 'legacy'] }
+};
 
-  html2pdf().set(opt).from(element).save();
+// 🔥 MAGICZNE WYPEŁNIENIE 2 STRON
+const fullHeight = element.scrollHeight;
+const pageHeight = 1122;
+
+let scaleFactor = 1;
+
+if (fullHeight < pageHeight * 2) {
+  scaleFactor = (pageHeight * 2) / fullHeight;
 }
+
+element.style.transform = `scale(${scaleFactor})`;
+element.style.transformOrigin = "top left";
+element.style.width = `${100 / scaleFactor}%`;
+
+html2pdf().set(opt).from(element).save().then(() => {
+  element.style.transform = "";
+  element.style.width = "";
+});
 
 document.addEventListener('visibilitychange', () => {
   if (document.hidden && state.unlocked) saveDraft();
