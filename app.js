@@ -129,321 +129,35 @@ const CAT_BREEDS = [
 ];
 
 const DRUG_PRESETS = [
-  {
-    name: 'Ketamina',
-    species: 'Oba',
-    category: 'Analgezja',
-    mgMl: 100,
-    mgKg: '',
-    mgKgOptions: [0.5, 1, 2],
-    mlPerKg: '',
-    route: 'IV',
-    routeOptions: ['IV', 'IM'],
-    note: 'Analgezja: wybierz 0.5 mg/kg, 1 mg/kg lub 2 mg/kg.'
-  },
-  {
-    name: 'Propofol',
-    species: 'Oba',
-    category: 'Indukcja',
-    mgMl: 10,
-    mgKg: '',
-    mgKgOptions: [1, 2],
-    mlPerKg: '',
-    route: 'IV',
-    routeOptions: ['IV'],
-    note: 'Indukcja: wybierz 1 mg/kg lub 2 mg/kg. Podawać powoli do efektu.'
-  },
-  {
-    name: 'Alfaxalon',
-    species: 'Oba',
-    category: 'Indukcja',
-    mgMl: 10,
-    mgKg: 2,
-    mgKgOptions: [],
-    mlPerKg: '',
-    route: 'IV',
-    routeOptions: ['IV'],
-    note: 'Dawkę dopasować do premedykacji.'
-  },
-  {
-    name: 'Diazepam',
-    species: 'Oba',
-    category: 'Premedykacja / Indukcja',
-    mgMl: 5,
-    mgKg: 0.2,
-    mgKgOptions: [],
-    mlPerKg: '',
-    route: 'IV',
-    routeOptions: ['IV'],
-    note: 'Benzodiazepina: może być stosowana w premedykacji i indukcji.'
-  },
-  {
-    name: 'Midazolam',
-    species: 'Oba',
-    category: 'Premedykacja / Indukcja',
-    mgMl: 5,
-    mgKg: 0.2,
-    mgKgOptions: [],
-    mlPerKg: '',
-    route: 'IV',
-    routeOptions: ['IV', 'IM'],
-    note: 'Benzodiazepina: może być stosowana w premedykacji i indukcji.'
-  },
-  {
-    name: 'Butorfanol',
-    species: 'Oba',
-    category: 'Analgezja',
-    mgMl: 10,
-    mgKg: 0.2,
-    mgKgOptions: [],
-    mlPerKg: '',
-    route: 'IM',
-    routeOptions: ['IM', 'IV'],
-    note: 'Dobra sedacja i analgezja trzewna.'
-  },
-  {
-    name: 'Buprenorfina',
-    species: 'Kot',
-    category: 'Analgezja',
-    mgMl: 0.3,
-    mgKg: 0.02,
-    mgKgOptions: [],
-    mlPerKg: '',
-    route: 'IM',
-    routeOptions: ['IM', 'IV'],
-    note: 'Często stosowana u kotów.'
-  },
-  {
-    name: 'Metadon',
-    species: 'Pies',
-    category: 'Analgezja / Premedykacja',
-    mgMl: 10,
-    mgKg: 0.2,
-    mgKgOptions: [],
-    mlPerKg: '',
-    route: 'IM',
-    routeOptions: ['IM', 'IV'],
-    note: 'Pies: 0.2 mg/kg. IM w premedykacji lub IV w analgezji.'
-  },
-  {
-    name: 'Metadon',
-    species: 'Kot',
-    category: 'Analgezja / Premedykacja',
-    mgMl: 10,
-    mgKg: 0.1,
-    mgKgOptions: [],
-    mlPerKg: '',
-    route: 'IM',
-    routeOptions: ['IM', 'IV'],
-    note: 'Kot: 0.1 mg/kg. IM w premedykacji lub IV w analgezji.'
-  },
-  {
-    name: 'Morfina',
-    species: 'Pies',
-    category: 'Analgezja',
-    mgMl: 10,
-    mgKg: 0.3,
-    mgKgOptions: [],
-    mlPerKg: '',
-    route: 'IM',
-    routeOptions: ['IM', 'IV'],
-    note: 'Możliwa sedacja i wymioty.'
-  },
-  {
-    name: 'Dexmedetomidyna',
-    species: 'Oba',
-    category: 'Premedykacja',
-    mgMl: 0.5,
-    mgKg: 0.005,
-    mgKgOptions: [],
-    mlPerKg: '',
-    route: 'IM',
-    routeOptions: ['IM', 'IV'],
-    note: 'Małe dawki, ostrożnie u pacjentów ryzyka.'
-  },
-  {
-    name: 'Medetomidyna',
-    species: 'Oba',
-    category: 'Premedykacja',
-    mgMl: 1,
-    mgKg: 0.02,
-    mgKgOptions: [],
-    mlPerKg: '',
-    route: 'IM',
-    routeOptions: ['IM', 'IV'],
-    note: 'Sedacja i analgezja.'
-  },
-  {
-    name: 'Acepromazyna',
-    species: 'Pies',
-    category: 'Premedykacja',
-    mgMl: 2,
-    mgKg: 0.02,
-    mgKgOptions: [],
-    mlPerKg: '',
-    route: 'IM',
-    routeOptions: ['IM', 'IV'],
-    note: 'Ostrożnie przy hipotensji.'
-  },
-  {
-    name: 'Atropina',
-    species: 'Oba',
-    category: 'Premedykacja',
-    mgMl: 0.5,
-    mgKg: 0.02,
-    mgKgOptions: [],
-    mlPerKg: '',
-    route: 'SC',
-    routeOptions: ['SC', 'IM', 'IV'],
-    note: 'Według wskazań klinicznych.'
-  },
-  {
-    name: 'Glikopirolat',
-    species: 'Oba',
-    category: 'Premedykacja',
-    mgMl: 0.2,
-    mgKg: 0.01,
-    mgKgOptions: [],
-    mlPerKg: '',
-    route: 'IM',
-    routeOptions: ['IM', 'IV'],
-    note: 'Alternatywa dla atropiny.'
-  },
-  {
-    name: 'Meloksykam',
-    species: 'Oba',
-    category: 'NLPZ',
-    mgMl: 5,
-    mgKg: 0.2,
-    mgKgOptions: [],
-    mlPerKg: '',
-    route: 'SC',
-    routeOptions: ['SC', 'IV'],
-    note: 'Sprawdzić nawodnienie i nerki.'
-  },
-  {
-    name: 'Metacam',
-    species: 'Oba',
-    category: 'NLPZ',
-    mgMl: 20,
-    mgKg: '',
-    mgKgOptions: [],
-    mlPerKg: 0.04,
-    route: 'SC',
-    routeOptions: ['SC', 'IV'],
-    note: 'Schemat: 0.4 ml / 10 kg'
-  },
-  {
-    name: 'Biovetalgin',
-    species: 'Oba',
-    category: 'Analgezja',
-    mgMl: 500,
-    mgKg: '',
-    mgKgOptions: [],
-    mlPerKg: 0.1,
-    route: 'IV',
-    routeOptions: ['IV'],
-    note: 'Schemat: 1 ml / 10 kg'
-  },
-  {
-    name: 'Biofazolin',
-    species: 'Oba',
-    category: 'Antybiotyk',
-    mgMl: '',
-    mgKg: '',
-    mgKgOptions: [],
-    mlPerKg: 0.2,
-    route: 'IV',
-    routeOptions: ['IV'],
-    note: 'Schemat: 1 ml / 5 kg'
-  },
-  {
-    name: 'Cefazolina',
-    species: 'Oba',
-    category: 'Antybiotyk',
-    mgMl: 100,
-    mgKg: 22,
-    mgKgOptions: [],
-    mlPerKg: '',
-    route: 'IV',
-    routeOptions: ['IV'],
-    note: 'Często okołooperacyjnie.'
-  },
-  {
-    name: 'Lidokaina',
-    species: 'Pies',
-    category: 'Miejscowe / CRI',
-    mgMl: 20,
-    mgKg: 2,
-    mgKgOptions: [],
-    mlPerKg: '',
-    route: 'IV',
-    routeOptions: ['IV', 'Miejscowo'],
-    note: 'Do bolusa lub CRI według schematu.'
-  },
-  {
-    name: 'Bupiwakaina',
-    species: 'Oba',
-    category: 'Miejscowe',
-    mgMl: 5,
-    mgKg: 2,
-    mgKgOptions: [],
-    mlPerKg: '',
-    route: 'Miejscowo',
-    routeOptions: ['Miejscowo'],
-    note: 'Blokady miejscowe.'
-  },
-  {
-    name: 'Maropitant',
-    species: 'Oba',
-    category: 'Przeciwwymiotny',
-    mgMl: 10,
-    mgKg: 1,
-    mgKgOptions: [],
-    mlPerKg: '',
-    route: 'SC',
-    routeOptions: ['SC'],
-    note: 'Przedmedykacja u pacjentów z ryzykiem wymiotów.'
-  }
+  { name: 'Ketamina', species: 'Oba', category: 'Analgezja', mgMl: 100, mgKg: '', mgKgOptions: [0.5, 1, 2], mlPerKg: '', route: 'IV', routeOptions: ['IV', 'IM'], note: 'Analgezja: wybierz 0.5 mg/kg, 1 mg/kg lub 2 mg/kg.' },
+  { name: 'Propofol', species: 'Oba', category: 'Indukcja', mgMl: 10, mgKg: '', mgKgOptions: [1, 2], mlPerKg: '', route: 'IV', routeOptions: ['IV'], note: 'Indukcja: wybierz 1 mg/kg lub 2 mg/kg. Podawać powoli do efektu.' },
+  { name: 'Alfaxalon', species: 'Oba', category: 'Indukcja', mgMl: 10, mgKg: 2, mgKgOptions: [], mlPerKg: '', route: 'IV', routeOptions: ['IV'], note: 'Dawkę dopasować do premedykacji.' },
+  { name: 'Diazepam', species: 'Oba', category: 'Premedykacja / Indukcja', mgMl: 5, mgKg: 0.2, mgKgOptions: [], mlPerKg: '', route: 'IV', routeOptions: ['IV'], note: 'Benzodiazepina: może być stosowana w premedykacji i indukcji.' },
+  { name: 'Midazolam', species: 'Oba', category: 'Premedykacja / Indukcja', mgMl: 5, mgKg: 0.2, mgKgOptions: [], mlPerKg: '', route: 'IV', routeOptions: ['IV', 'IM'], note: 'Benzodiazepina: może być stosowana w premedykacji i indukcji.' },
+  { name: 'Butorfanol', species: 'Oba', category: 'Analgezja', mgMl: 10, mgKg: 0.2, mgKgOptions: [], mlPerKg: '', route: 'IM', routeOptions: ['IM', 'IV'], note: 'Dobra sedacja i analgezja trzewna.' },
+  { name: 'Buprenorfina', species: 'Kot', category: 'Analgezja', mgMl: 0.3, mgKg: 0.02, mgKgOptions: [], mlPerKg: '', route: 'IM', routeOptions: ['IM', 'IV'], note: 'Często stosowana u kotów.' },
+  { name: 'Metadon', species: 'Pies', category: 'Analgezja / Premedykacja', mgMl: 10, mgKg: 0.2, mgKgOptions: [], mlPerKg: '', route: 'IM', routeOptions: ['IM', 'IV'], note: 'Pies: 0.2 mg/kg. IM w premedykacji lub IV w analgezji.' },
+  { name: 'Metadon', species: 'Kot', category: 'Analgezja / Premedykacja', mgMl: 10, mgKg: 0.1, mgKgOptions: [], mlPerKg: '', route: 'IM', routeOptions: ['IM', 'IV'], note: 'Kot: 0.1 mg/kg. IM w premedykacji lub IV w analgezji.' },
+  { name: 'Morfina', species: 'Pies', category: 'Analgezja', mgMl: 10, mgKg: 0.3, mgKgOptions: [], mlPerKg: '', route: 'IM', routeOptions: ['IM', 'IV'], note: 'Możliwa sedacja i wymioty.' },
+  { name: 'Dexmedetomidyna', species: 'Oba', category: 'Premedykacja', mgMl: 0.5, mgKg: 0.005, mgKgOptions: [], mlPerKg: '', route: 'IM', routeOptions: ['IM', 'IV'], note: 'Małe dawki, ostrożnie u pacjentów ryzyka.' },
+  { name: 'Medetomidyna', species: 'Oba', category: 'Premedykacja', mgMl: 1, mgKg: 0.02, mgKgOptions: [], mlPerKg: '', route: 'IM', routeOptions: ['IM', 'IV'], note: 'Sedacja i analgezja.' },
+  { name: 'Acepromazyna', species: 'Pies', category: 'Premedykacja', mgMl: 2, mgKg: 0.02, mgKgOptions: [], mlPerKg: '', route: 'IM', routeOptions: ['IM', 'IV'], note: 'Ostrożnie przy hipotensji.' },
+  { name: 'Atropina', species: 'Oba', category: 'Premedykacja', mgMl: 0.5, mgKg: 0.02, mgKgOptions: [], mlPerKg: '', route: 'SC', routeOptions: ['SC', 'IM', 'IV'], note: 'Według wskazań klinicznych.' },
+  { name: 'Glikopirolat', species: 'Oba', category: 'Premedykacja', mgMl: 0.2, mgKg: 0.01, mgKgOptions: [], mlPerKg: '', route: 'IM', routeOptions: ['IM', 'IV'], note: 'Alternatywa dla atropiny.' },
+  { name: 'Meloksykam', species: 'Oba', category: 'NLPZ', mgMl: 5, mgKg: 0.2, mgKgOptions: [], mlPerKg: '', route: 'SC', routeOptions: ['SC', 'IV'], note: 'Sprawdzić nawodnienie i nerki.' },
+  { name: 'Metacam', species: 'Oba', category: 'NLPZ', mgMl: 20, mgKg: '', mgKgOptions: [], mlPerKg: 0.04, route: 'SC', routeOptions: ['SC', 'IV'], note: 'Schemat: 0.4 ml / 10 kg' },
+  { name: 'Biovetalgin', species: 'Oba', category: 'Analgezja', mgMl: 500, mgKg: '', mgKgOptions: [], mlPerKg: 0.1, route: 'IV', routeOptions: ['IV'], note: 'Schemat: 1 ml / 10 kg' },
+  { name: 'Biofazolin', species: 'Oba', category: 'Antybiotyk', mgMl: '', mgKg: '', mgKgOptions: [], mlPerKg: 0.2, route: 'IV', routeOptions: ['IV'], note: 'Schemat: 1 ml / 5 kg' },
+  { name: 'Cefazolina', species: 'Oba', category: 'Antybiotyk', mgMl: 100, mgKg: 22, mgKgOptions: [], mlPerKg: '', route: 'IV', routeOptions: ['IV'], note: 'Często okołooperacyjnie.' },
+  { name: 'Lidokaina', species: 'Pies', category: 'Miejscowe / CRI', mgMl: 20, mgKg: 2, mgKgOptions: [], mlPerKg: '', route: 'IV', routeOptions: ['IV', 'Miejscowo'], note: 'Do bolusa lub CRI według schematu.' },
+  { name: 'Bupiwakaina', species: 'Oba', category: 'Miejscowe', mgMl: 5, mgKg: 2, mgKgOptions: [], mlPerKg: '', route: 'Miejscowo', routeOptions: ['Miejscowo'], note: 'Blokady miejscowe.' },
+  { name: 'Maropitant', species: 'Oba', category: 'Przeciwwymiotny', mgMl: 10, mgKg: 1, mgKgOptions: [], mlPerKg: '', route: 'SC', routeOptions: ['SC'], note: 'Przedmedykacja u pacjentów z ryzykiem wymiotów.' }
 ];
 
 const PROTOCOL_PRESETS = [
-  {
-    id: 'medetomidine-methadone-im',
-    name: 'Medetomidyna + Metadon IM',
-    short: 'Alfa2-agonista + opioid',
-    description: 'Premedykacja domięśniowa: medetomidyna + metadon.',
-    species: 'Oba',
-    target: 'Premedykacja',
-    drugs: [
-      { name: 'Medetomidyna', route: 'IM' },
-      { name: 'Metadon', route: 'IM' }
-    ]
-  },
-  {
-    id: 'methadone-midazolam',
-    name: 'Metadon + Midazolam',
-    short: 'Opioid + benzodiazepina',
-    description: 'Premedykacja / pacjent bólowy.',
-    species: 'Oba',
-    target: 'Premedykacja',
-    drugs: [
-      { name: 'Metadon', route: 'IM' },
-      { name: 'Midazolam', route: 'IV' }
-    ]
-  },
-  {
-    id: 'butorphanol-midazolam',
-    name: 'Butorfanol + Midazolam',
-    short: 'Badanie diagnostyczne',
-    description: 'Spokojniejsze badanie diagnostyczne.',
-    species: 'Oba',
-    target: 'Premedykacja',
-    drugs: [
-      { name: 'Butorfanol', route: 'IM' },
-      { name: 'Midazolam', route: 'IM' }
-    ]
-  }
+  { id: 'medetomidine-methadone-im', name: 'Medetomidyna + Metadon IM', short: 'Alfa2-agonista + opioid', description: 'Premedykacja domięśniowa: medetomidyna + metadon.', species: 'Oba', target: 'Premedykacja', drugs: [{ name: 'Medetomidyna', route: 'IM' }, { name: 'Metadon', route: 'IM' }] },
+  { id: 'methadone-midazolam', name: 'Metadon + Midazolam', short: 'Opioid + benzodiazepina', description: 'Premedykacja / pacjent bólowy.', species: 'Oba', target: 'Premedykacja', drugs: [{ name: 'Metadon', route: 'IM' }, { name: 'Midazolam', route: 'IV' }] },
+  { id: 'butorphanol-midazolam', name: 'Butorfanol + Midazolam', short: 'Badanie diagnostyczne', description: 'Spokojniejsze badanie diagnostyczne.', species: 'Oba', target: 'Premedykacja', drugs: [{ name: 'Butorfanol', route: 'IM' }, { name: 'Midazolam', route: 'IM' }] }
 ];
 
 const vitalsTemplate = () =>
@@ -1624,7 +1338,7 @@ function printPreviewView() {
         <div class="card-body">
           <h3>Podglad wydruku</h3>
           <div class="small">
-            To jest czysty podglad planu. Przyciskiem „Pobierz PDF” zapiszesz plik na komputerze lub telefonie.
+            To jest kliniczny podglad planu. Przyciskiem „Pobierz PDF” zapiszesz plik na komputerze lub telefonie.
           </div>
         </div>
       </div>
@@ -2432,204 +2146,226 @@ function formatTemperament(temp) {
 }
 
 function renderPrintableDrugRows(rows, intra = false) {
-  return (
-    rows
-      .filter((row) => Object.values(row).some((value) => String(value || '').trim() !== ''))
-      .map(
-        (row) => `
-      <tr>
-        <td>${escapeHtml(row.name || '')}</td>
-        <td>${escapeHtml(row.dose || '')}</td>
-        <td>${escapeHtml(intra ? row.hour || '' : row.route || '')}</td>
-        <td>${escapeHtml(row.notes || '')}</td>
-      </tr>
-    `
-      )
-      .join('') ||
-    `
-      <tr>
-        <td colspan="4">Brak danych</td>
-      </tr>
-    `
+  const filteredRows = (rows || []).filter((row) =>
+    Object.values(row).some((value) => String(value || '').trim() !== '')
   );
+
+  if (!filteredRows.length) {
+    return `<tr><td colspan="4" style="border:1px solid #000;padding:4px;">Brak danych</td></tr>`;
+  }
+
+  return filteredRows
+    .map(
+      (row) => `
+      <tr>
+        <td style="border:1px solid #000;padding:4px;">${escapeHtml(row.name || '')}</td>
+        <td style="border:1px solid #000;padding:4px;">${escapeHtml(row.dose || '')}</td>
+        <td style="border:1px solid #000;padding:4px;">${escapeHtml(intra ? row.hour || '' : row.route || '')}</td>
+        <td style="border:1px solid #000;padding:4px;">${escapeHtml(row.notes || '')}</td>
+      </tr>
+    `
+    )
+    .join('');
 }
 
 function renderPrintableVitalsRows(rows) {
-  return (
-    rows
-      .filter((row) =>
-        ['time', 'hr', 'spo2', 'etco2', 'temp', 'pressure', 'mac'].some(
-          (key) => String(row[key] || '').trim() !== ''
-        )
-      )
-      .map(
-        (row) => `
-      <tr>
-        <td>${escapeHtml(row.time || '')}</td>
-        <td>${escapeHtml(row.hr || '')}</td>
-        <td>${escapeHtml(row.spo2 || '')}</td>
-        <td>${escapeHtml(row.etco2 || '')}</td>
-        <td>${escapeHtml(row.temp || '')}</td>
-        <td>${escapeHtml(row.pressure || '')}</td>
-        <td>${escapeHtml(row.mac || '')}</td>
-      </tr>
-    `
-      )
-      .join('') ||
-    `
-      <tr>
-        <td colspan="7">Brak danych</td>
-      </tr>
-    `
+  const filteredRows = (rows || []).filter((row) =>
+    ['time', 'hr', 'spo2', 'etco2', 'temp', 'pressure', 'mac'].some(
+      (key) => String(row[key] || '').trim() !== ''
+    )
   );
+
+  const rowsToRender = filteredRows.length ? filteredRows : (rows || []);
+
+  return rowsToRender
+    .map(
+      (row) => `
+      <tr>
+        <td style="border:1px solid #000;padding:4px;text-align:center;">${escapeHtml(row.time || '')}</td>
+        <td style="border:1px solid #000;padding:4px;text-align:center;">${escapeHtml(row.hr || '')}</td>
+        <td style="border:1px solid #000;padding:4px;text-align:center;">${escapeHtml(row.spo2 || '')}</td>
+        <td style="border:1px solid #000;padding:4px;text-align:center;">${escapeHtml(row.etco2 || '')}</td>
+        <td style="border:1px solid #000;padding:4px;text-align:center;">${escapeHtml(row.temp || '')}</td>
+        <td style="border:1px solid #000;padding:4px;text-align:center;">${escapeHtml(row.pressure || '')}</td>
+        <td style="border:1px solid #000;padding:4px;text-align:center;">${escapeHtml(row.mac || '')}</td>
+      </tr>
+    `
+    )
+    .join('');
 }
 
 function renderPrintableCardMarkup(form) {
   return `
     <div style="
-      width: 190mm;
-      margin: 0 auto;
-      padding: 0;
-      color: #000;
-      background: #fff;
-      font-family: Arial, Helvetica, sans-serif;
-      font-size: 12px;
-      line-height: 1.35;
+      width:190mm;
+      margin:0 auto;
+      color:#000;
+      background:#fff;
+      font-family:Arial, Helvetica, sans-serif;
+      font-size:11.5px;
+      line-height:1.3;
     ">
-      <div style="text-align:center;border-bottom:1px solid #000;padding-bottom:5px;margin-bottom:6px;">
-        <div style="font-size:10px;">${escapeHtml(form.clinicName || AUTHOR)}</div>
-        <h1 style="margin:2px 0;font-size:20px;line-height:1.1;">${APP_NAME}</h1>
-        <div style="font-size:10px;">${escapeHtml(form.authorMark || `Autorstwo: ${AUTHOR}`)}</div>
-      </div>
 
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-bottom:8px;">
-        <div><strong>Data:</strong> ${escapeHtml(form.visitDate || '-')}</div>
-        <div><strong>Stan:</strong> ${escapeHtml(form.generalState || '-')}</div>
-        <div><strong>Zabieg / ASA:</strong> ${escapeHtml(form.procedureAsa || '-')}</div>
-      </div>
+      <div style="min-height:277mm;display:flex;flex-direction:column;">
+        <div style="text-align:center;border-bottom:2px solid #000;padding-bottom:6px;margin-bottom:8px;">
+          <div style="font-size:11px;">${escapeHtml(form.clinicName || AUTHOR)}</div>
+          <h1 style="margin:3px 0;font-size:22px;line-height:1.1;">KARTA ANESTEZJOLOGICZNA</h1>
+          <div style="font-size:10px;">${escapeHtml(form.authorMark || `Autorstwo: ${AUTHOR}`)}</div>
+        </div>
 
-      <div style="border:1px solid #000;padding:5px;margin-bottom:5px;">
-        <div style="font-weight:700;font-size:14px;margin-bottom:3px;">Pacjent i właściciel</div>
-        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:3px 8px;">
-          <div><strong>Właściciel:</strong> ${escapeHtml(form.ownerName || '-')}</div>
-          <div><strong>Pacjent:</strong> ${escapeHtml(form.animalName || '-')}</div>
-          <div><strong>Gatunek:</strong> ${escapeHtml(form.species || '-')}</div>
-          <div><strong>Rasa:</strong> ${escapeHtml(form.breed || '-')}</div>
-          <div><strong>Wiek:</strong> ${escapeHtml(form.age || '-')}</div>
-          <div><strong>Waga:</strong> ${escapeHtml(form.weight || '-')}</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:8px;">
+          <div style="border:1px solid #000;padding:5px;"><strong>Data:</strong><br>${escapeHtml(form.visitDate || '-')}</div>
+          <div style="border:1px solid #000;padding:5px;"><strong>Pacjent:</strong><br>${escapeHtml(form.animalName || '-')}</div>
+          <div style="border:1px solid #000;padding:5px;"><strong>Masa:</strong><br>${escapeHtml(form.weight || '-')}</div>
+          <div style="border:1px solid #000;padding:5px;"><strong>ASA / zabieg:</strong><br>${escapeHtml(form.procedureAsa || '-')}</div>
+        </div>
+
+        <div style="border:1px solid #000;padding:7px;margin-bottom:8px;">
+          <div style="font-weight:700;font-size:14px;margin-bottom:5px;border-bottom:1px solid #000;">Pacjent i właściciel</div>
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:5px 12px;">
+            <div><strong>Właściciel:</strong> ${escapeHtml(form.ownerName || '-')}</div>
+            <div><strong>Imię zwierzęcia:</strong> ${escapeHtml(form.animalName || '-')}</div>
+            <div><strong>Gatunek:</strong> ${escapeHtml(form.species || '-')}</div>
+            <div><strong>Rasa:</strong> ${escapeHtml(form.breed || '-')}</div>
+            <div><strong>Wiek:</strong> ${escapeHtml(form.age || '-')}</div>
+            <div><strong>Stan ogólny:</strong> ${escapeHtml(form.generalState || '-')}</div>
+          </div>
+        </div>
+
+        <div style="border:1px solid #000;padding:7px;margin-bottom:8px;flex:1;">
+          <div style="font-weight:700;font-size:14px;margin-bottom:5px;border-bottom:1px solid #000;">Wywiad</div>
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px 12px;">
+            <div>
+              <strong>Choroby przewlekłe:</strong>
+              <div style="white-space:pre-wrap;min-height:35px;">${escapeHtml(form.historyChronic || '-')}</div>
+            </div>
+            <div>
+              <strong>Leki / alergie:</strong>
+              <div style="white-space:pre-wrap;min-height:35px;">${escapeHtml(form.historyMedsAllergies || '-')}</div>
+            </div>
+            <div>
+              <strong>Poprzednie znieczulenia:</strong>
+              <div style="white-space:pre-wrap;min-height:35px;">${escapeHtml(form.historyPrevAnesthesia || '-')}</div>
+            </div>
+            <div>
+              <strong>Charakter:</strong>
+              <div style="min-height:35px;">${escapeHtml(formatTemperament(form.temperament))}</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="border:1px solid #000;padding:7px;margin-bottom:8px;flex:1;">
+          <div style="font-weight:700;font-size:14px;margin-bottom:5px;border-bottom:1px solid #000;">Plan znieczulenia</div>
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px 12px;">
+            <div>
+              <strong>Premedykacja:</strong>
+              <div style="white-space:pre-wrap;min-height:45px;">${escapeHtml(form.planPremed || '-')}</div>
+            </div>
+            <div>
+              <strong>Indukcja:</strong>
+              <div style="white-space:pre-wrap;min-height:45px;">${escapeHtml(form.planInduction || '-')}</div>
+            </div>
+            <div>
+              <strong>Podtrzymanie:</strong>
+              <div style="white-space:pre-wrap;min-height:45px;">${escapeHtml(form.planMaintenance || '-')}</div>
+            </div>
+            <div>
+              <strong>Analgezja:</strong>
+              <div style="white-space:pre-wrap;min-height:45px;">${escapeHtml(form.planAnalgesia || '-')}</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-bottom:8px;">
+          <div style="font-weight:700;font-size:14px;margin-bottom:4px;">Dawki leków</div>
+          <table style="width:100%;border-collapse:collapse;font-size:10.5px;">
+            <thead>
+              <tr>
+                <th style="border:1px solid #000;padding:4px;text-align:left;">Lek</th>
+                <th style="border:1px solid #000;padding:4px;text-align:left;">Dawka</th>
+                <th style="border:1px solid #000;padding:4px;text-align:left;">Droga</th>
+                <th style="border:1px solid #000;padding:4px;text-align:left;">Uwagi</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${renderPrintableDrugRows(form.drugTable, false)}
+            </tbody>
+          </table>
+        </div>
+
+        <div style="margin-top:auto;display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:10px;">
+          <div>Strona 1 / 2</div>
+          <div style="text-align:right;">${escapeHtml(new Date().toLocaleString('pl-PL'))}</div>
         </div>
       </div>
 
-      <div style="border:1px solid #000;padding:5px;margin-bottom:5px;">
-        <div style="font-weight:700;font-size:12px;margin-bottom:3px;">Wywiad</div>
-        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:4px 8px;">
-          <div>
-            <strong>Choroby przewlekłe:</strong>
-            <div style="white-space:pre-wrap;">${escapeHtml(form.historyChronic || '-')}</div>
-          </div>
-          <div>
-            <strong>Leki / alergie:</strong>
-            <div style="white-space:pre-wrap;">${escapeHtml(form.historyMedsAllergies || '-')}</div>
-          </div>
-          <div>
-            <strong>Poprzednie znieczulenia:</strong>
-            <div style="white-space:pre-wrap;">${escapeHtml(form.historyPrevAnesthesia || '-')}</div>
-          </div>
-          <div>
-            <strong>Charakter:</strong>
-            <div>${escapeHtml(formatTemperament(form.temperament))}</div>
+      <div style="page-break-before:always;min-height:277mm;display:flex;flex-direction:column;">
+        <div style="text-align:center;border-bottom:2px solid #000;padding-bottom:6px;margin-bottom:8px;">
+          <h2 style="margin:3px 0;font-size:20px;">PRZEBIEG ZNIECZULENIA</h2>
+          <div style="font-size:11px;">
+            ${escapeHtml(form.animalName || 'Pacjent')} | ${escapeHtml(form.species || '-')} | ${escapeHtml(form.weight || '-')} kg
           </div>
         </div>
-      </div>
 
-      <div style="border:1px solid #000;padding:5px;margin-bottom:5px;">
-        <div style="font-weight:700;font-size:12px;margin-bottom:3px;">Plan znieczulenia</div>
-        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:4px 8px;">
-          <div>
-            <strong>Premedykacja:</strong>
-            <div style="white-space:pre-wrap;">${escapeHtml(form.planPremed || '-')}</div>
-          </div>
-          <div>
-            <strong>Indukcja:</strong>
-            <div style="white-space:pre-wrap;">${escapeHtml(form.planInduction || '-')}</div>
-          </div>
-          <div>
-            <strong>Podtrzymanie:</strong>
-            <div style="white-space:pre-wrap;">${escapeHtml(form.planMaintenance || '-')}</div>
-          </div>
-          <div>
-            <strong>Analgezja:</strong>
-            <div style="white-space:pre-wrap;">${escapeHtml(form.planAnalgesia || '-')}</div>
+        <div style="border:1px solid #000;padding:7px;margin-bottom:8px;">
+          <div style="font-weight:700;font-size:14px;margin-bottom:5px;border-bottom:1px solid #000;">Przebieg zabiegu</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;">
+            <div><strong>Start:</strong><br>${escapeHtml(form.surgeryStart || '-')}</div>
+            <div><strong>Koniec:</strong><br>${escapeHtml(form.surgeryEnd || '-')}</div>
+            <div><strong>Lekarz:</strong><br>${escapeHtml(form.surgeon || '-')}</div>
+            <div><strong>Asysta:</strong><br>${escapeHtml(form.assistant || '-')}</div>
           </div>
         </div>
-      </div>
 
-      <div style="border:1px solid #000;padding:5px;margin-bottom:5px;">
-        <div style="font-weight:700;font-size:12px;margin-bottom:3px;">Przebieg zabiegu</div>
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;">
-          <div><strong>Start:</strong> ${escapeHtml(form.surgeryStart || '-')}</div>
-          <div><strong>Koniec:</strong> ${escapeHtml(form.surgeryEnd || '-')}</div>
-          <div><strong>Lekarz:</strong> ${escapeHtml(form.surgeon || '-')}</div>
-          <div><strong>Asysta:</strong> ${escapeHtml(form.assistant || '-')}</div>
+        <div style="margin-bottom:8px;">
+          <div style="font-weight:700;font-size:14px;margin-bottom:4px;">Leki śródzabiegowe</div>
+          <table style="width:100%;border-collapse:collapse;font-size:10.5px;">
+            <thead>
+              <tr>
+                <th style="border:1px solid #000;padding:4px;text-align:left;">Lek</th>
+                <th style="border:1px solid #000;padding:4px;text-align:left;">Dawka</th>
+                <th style="border:1px solid #000;padding:4px;text-align:left;">Godzina</th>
+                <th style="border:1px solid #000;padding:4px;text-align:left;">Uwagi</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${renderPrintableDrugRows(form.intraopDrugs, true)}
+            </tbody>
+          </table>
         </div>
-      </div>
 
-      <div style="margin-bottom:5px;">
-        <div style="font-weight:700;font-size:12px;margin-bottom:3px;">Dawki leków</div>
-        <table style="width:100%;border-collapse:collapse;font-size:11px;">
-          <thead>
-            <tr>
-              <th style="border:1px solid #000;padding:2px;text-align:left;">Lek</th>
-              <th style="border:1px solid #000;padding:2px;text-align:left;">Dawka</th>
-              <th style="border:1px solid #000;padding:2px;text-align:left;">Droga</th>
-              <th style="border:1px solid #000;padding:2px;text-align:left;">Uwagi</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${renderPrintableDrugRows(form.drugTable, false)}
-          </tbody>
-        </table>
-      </div>
+        <div style="flex:1;">
+          <div style="font-weight:700;font-size:14px;margin-bottom:4px;">Parametry podczas zabiegu</div>
+          <table style="width:100%;border-collapse:collapse;font-size:10px;">
+            <thead>
+              <tr>
+                <th style="border:1px solid #000;padding:4px;">Czas</th>
+                <th style="border:1px solid #000;padding:4px;">HR</th>
+                <th style="border:1px solid #000;padding:4px;">SpO₂</th>
+                <th style="border:1px solid #000;padding:4px;">EtCO₂</th>
+                <th style="border:1px solid #000;padding:4px;">Temp</th>
+                <th style="border:1px solid #000;padding:4px;">Ciśnienie</th>
+                <th style="border:1px solid #000;padding:4px;">MAC %</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${renderPrintableVitalsRows(form.vitals)}
+            </tbody>
+          </table>
+        </div>
 
-      <div style="margin-bottom:5px;">
-        <div style="font-weight:700;font-size:12px;margin-bottom:3px;">Leki śródzabiegowe</div>
-        <table style="width:100%;border-collapse:collapse;font-size:9.5px;">
-          <thead>
-            <tr>
-              <th style="border:1px solid #000;padding:4px;text-align:left;">Lek</th>
-              <th style="border:1px solid #000;padding:2px;text-align:left;">Dawka</th>
-              <th style="border:1px solid #000;padding:2px;text-align:left;">Godzina</th>
-              <th style="border:1px solid #000;padding:2px;text-align:left;">Uwagi</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${renderPrintableDrugRows(form.intraopDrugs, true)}
-          </tbody>
-        </table>
-      </div>
+        <div style="border:1px solid #000;padding:8px;margin-top:10px;">
+          <div style="font-weight:700;font-size:14px;margin-bottom:8px;">Uwagi końcowe / podpis</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:20px;">
+            <div style="border-top:1px solid #000;padding-top:5px;text-align:center;">Podpis osoby monitorującej</div>
+            <div style="border-top:1px solid #000;padding-top:5px;text-align:center;">Podpis lekarza</div>
+          </div>
+        </div>
 
-      <div>
-        <div style="font-weight:700;font-size:12px;margin-bottom:3px;">Parametry podczas zabiegu</div>
-        <table style="width:100%;border-collapse:collapse;font-size:8.5px;">
-          <thead>
-            <tr>
-              <th style="border:1px solid #000;padding:2px;">Czas</th>
-              <th style="border:1px solid #000;padding:2px;">HR</th>
-              <th style="border:1px solid #000;padding:2px;">SpO2</th>
-              <th style="border:1px solid #000;padding:2px;">EtCO2</th>
-              <th style="border:1px solid #000;padding:2px;">Temp</th>
-              <th style="border:1px solid #000;padding:2px;">Ciśnienie</th>
-              <th style="border:1px solid #000;padding:2px;">MAC %</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${renderPrintableVitalsRows(form.vitals)}
-          </tbody>
-        </table>
-      </div>
-
-      <div style="margin-top:5px;text-align:right;font-size:8px;">
-        Wygenerowano: ${escapeHtml(new Date().toLocaleString('pl-PL'))}
+        <div style="margin-top:auto;display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:10px;">
+          <div>Strona 2 / 2</div>
+          <div style="text-align:right;">Wygenerowano: ${escapeHtml(new Date().toLocaleString('pl-PL'))}</div>
+        </div>
       </div>
     </div>
   `;
@@ -2656,10 +2392,7 @@ function generatePDF() {
   const opt = {
     margin: [4, 4, 4, 4],
     filename: `plan-anestezjologiczny-${patientName || 'pacjent'}-${new Date().toISOString().slice(0, 10)}.pdf`,
-    image: {
-      type: 'jpeg',
-      quality: 0.98
-    },
+    image: { type: 'jpeg', quality: 0.98 },
     html2canvas: {
       scale: 2,
       useCORS: true,
@@ -2672,7 +2405,7 @@ function generatePDF() {
       orientation: 'portrait'
     },
     pagebreak: {
-      mode: ['avoid-all', 'css', 'legacy']
+      mode: ['css', 'legacy']
     }
   };
 
