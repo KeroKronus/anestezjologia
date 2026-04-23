@@ -2486,7 +2486,14 @@ function renderPrintableVitalsRows(rows) {
 
 function renderPrintableCardMarkup(form) {
   return `
-    <div style="max-width:1100px;margin:0 auto;color:var(--text);">
+    <div style="
+      max-width:1100px;
+      margin:0 auto;
+      color:#000;
+      background:#fff;
+      font-family:Arial, Helvetica, sans-serif;
+      line-height:1.4;
+    ">
       <div style="border-bottom:2px solid var(--border);padding-bottom:12px;margin-bottom:18px;text-align:center;">
         <div class="sub">${escapeHtml(form.clinicName || AUTHOR)}</div>
         <h1 style="margin:8px 0 8px;font-size:28px;">${APP_NAME}</h1>
@@ -2709,9 +2716,10 @@ function generatePDF() {
     filename: `plan-anestezjologiczny-${patientName || 'pacjent'}-${new Date().toISOString().slice(0, 10)}.pdf`,
     image: { type: 'jpeg', quality: 0.98 },
     html2canvas: {
-      scale: 2,
-      useCORS: true
-    },
+  scale: 2,
+  useCORS: true,
+  backgroundColor: '#ffffff'
+   },
     jsPDF: {
       unit: 'mm',
       format: 'a4',

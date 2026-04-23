@@ -788,3 +788,39 @@ textarea {
     display: none;
   }
 }
+#pdfContent {
+  background: #ffffff !important;
+  color: #000000 !important;
+}
+
+#pdfContent * {
+  color: #000000 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+#pdfContent .card,
+#pdfContent .inner-card,
+#pdfContent .card-body {
+  background: #ffffff !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+#pdfContent h1,
+#pdfContent h3 {
+  color: #000000 !important;
+}
+
+#pdfContent table,
+#pdfContent th,
+#pdfContent td {
+  border: 1px solid #000000 !important;
+  color: #000000 !important;
+  background: #ffffff !important;
+}
+
+#pdfContent .label {
+  color: #000000 !important;
+  font-weight: 700;
+}
