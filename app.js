@@ -1445,7 +1445,7 @@ function mainView() {
         <div>
           <div class="toolbar no-print">
             <button class="btn primary-btn" id="saveBtn">Zapisz</button>
-            <button class="btn secondary" id="printBtn">Podglad wydruku</button>
+            <button class="btn secondary" id="printBtn">PDF TEST 777</button>
             <button class="btn secondary" id="samePatientBtn">Nowa karta tego pacjenta</button>
           </div>
 
@@ -1627,14 +1627,14 @@ function printPreviewView() {
       <div class="toolbar no-print">
         <button class="btn secondary" id="backToPlanBtn">Powrot do planu</button>
         <button class="btn secondary" id="backHomeFromPreviewBtn">Powrot do menu</button>
-        <button class="btn primary-btn" id="openSystemPrintBtn">Drukuj / PDF</button>
+        <button class="btn primary-btn" id="downloadPdfBtn">Pobierz PDF</button>
       </div>
 
       <div class="card no-print">
         <div class="card-body">
           <h3>Podglad wydruku</h3>
           <div class="small">
-            To jest czysty podglad planu. Przyciskiem „Drukuj / PDF” uruchamiasz systemowe drukowanie dopiero wtedy, gdy chcesz.
+            To jest czysty podglad planu. Przyciskiem „Pobierz PDF” zapiszesz plik na komputerze lub telefonie.
           </div>
         </div>
       </div>
@@ -1643,7 +1643,9 @@ function printPreviewView() {
 
       <div class="card">
         <div class="card-body">
-          ${renderPrintableCardMarkup(state.form)}
+          <div id="pdfContent">
+            ${renderPrintableCardMarkup(state.form)}
+          </div>
         </div>
       </div>
     </div>
@@ -2036,10 +2038,10 @@ function bind() {
     };
   }
 
-  const openSystemPrintBtn = document.getElementById('openSystemPrintBtn');
-  if (openSystemPrintBtn) {
-    openSystemPrintBtn.onclick = () => {
-      openSystemPrintPreview();
+  const downloadPdfBtn = document.getElementById('downloadPdfBtn');
+  if (downloadPdfBtn) {
+    downloadPdfBtn.onclick = () => {
+      generatePDF();
     };
   }
 
@@ -2280,7 +2282,9 @@ function bind() {
   const pr = document.getElementById('printBtn');
 if (pr) {
   pr.onclick = () => {
-    generatePDF();
+    alert('klik działa');
+    state.currentPage = 'printPreview';
+    render();
   };
 }
 
@@ -2691,343 +2695,36 @@ function renderPrintableCardMarkup(form) {
   `;
 }
 
-function buildPrintableHtml(form) {
-  return `
-    <!doctype html>
-    <html lang="pl">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Karta anestezjologiczna - ${escapeHtml(form.animalName || 'Pacjent')}</title>
-      <style>
-        * {
-          box-sizing: border-box;
-        }
+function generatePDF() {
+  const element = document.getElementById('pdfContent');
 
-        body {
-          margin: 0;
-          padding: 24px;
-          font-family: Arial, Helvetica, sans-serif;
-          color: #000;
-          background: #fff;
-          line-height: 1.4;
-        }
-
-        .sheet {
-          max-width: 1100px;
-          margin: 0 auto;
-        }
-
-        .header {
-          border-bottom: 2px solid #000;
-          padding-bottom: 12px;
-          margin-bottom: 18px;
-          text-align: center;
-        }
-
-        .header h1 {
-          margin: 0 0 8px;
-          font-size: 28px;
-        }
-
-        .sub {
-          font-size: 13px;
-        }
-
-        .section {
-          margin-bottom: 18px;
-          page-break-inside: avoid;
-        }
-
-        .section-title {
-          font-size: 16px;
-          font-weight: 700;
-          margin: 0 0 10px;
-          padding-bottom: 4px;
-          border-bottom: 1px solid #000;
-        }
-
-        .grid {
-          display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 10px 14px;
-        }
-
-        .grid-3 {
-          display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 10px 14px;
-        }
-
-        .field {
-          border: 1px solid #000;
-          padding: 8px 10px;
-          min-height: 56px;
-        }
-
-        .label {
-          font-size: 12px;
-          font-weight: 700;
-          margin-bottom: 4px;
-        }
-
-        .value {
-          white-space: pre-wrap;
-          word-break: break-word;
-        }
-
-        table {
-          width: 100%;
-          border-collapse: collapse;
-          margin-top: 6px;
-        }
-
-        th, td {
-          border: 1px solid #000;
-          padding: 6px 8px;
-          text-align: left;
-          vertical-align: top;
-          font-size: 12px;
-        }
-
-        th {
-          background: #f2f2f2;
-        }
-
-        .footer {
-          margin-top: 26px;
-          font-size: 12px;
-          text-align: right;
-        }
-
-        @media (max-width: 700px) {
-          body {
-            padding: 12px;
-          }
-
-          .grid,
-          .grid-3 {
-            grid-template-columns: 1fr;
-          }
-
-          .header h1 {
-            font-size: 24px;
-          }
-
-          th, td {
-            font-size: 11px;
-            padding: 5px 6px;
-          }
-        }
-
-        @media print {
-          body {
-            padding: 10mm;
-          }
-
-          .sheet {
-            max-width: none;
-          }
-        }
-      </style>
-    </head>
-    <body>
-      <div class="sheet">
-        <div class="header">
-          <div class="sub">${escapeHtml(form.clinicName || AUTHOR)}</div>
-          <h1>${APP_NAME}</h1>
-          <div class="sub">${escapeHtml(form.authorMark || `Autorstwo: ${AUTHOR}`)}</div>
-        </div>
-
-        <div class="section">
-          <div class="section-title">Dane podstawowe</div>
-          <div class="grid-3">
-            <div class="field">
-              <div class="label">Data karty</div>
-              <div class="value">${escapeHtml(form.visitDate || '')}</div>
-            </div>
-            <div class="field">
-              <div class="label">Stan ogólny</div>
-              <div class="value">${escapeHtml(form.generalState || '')}</div>
-            </div>
-            <div class="field">
-              <div class="label">Rodzaj zabiegu + ASA</div>
-              <div class="value">${escapeHtml(form.procedureAsa || '')}</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="section">
-          <div class="section-title">Pacjent i właściciel</div>
-          <div class="grid">
-            <div class="field">
-              <div class="label">Imię i nazwisko właściciela</div>
-              <div class="value">${escapeHtml(form.ownerName || '')}</div>
-            </div>
-            <div class="field">
-              <div class="label">Imię zwierzęcia</div>
-              <div class="value">${escapeHtml(form.animalName || '')}</div>
-            </div>
-            <div class="field">
-              <div class="label">Gatunek</div>
-              <div class="value">${escapeHtml(form.species || '')}</div>
-            </div>
-            <div class="field">
-              <div class="label">Rasa</div>
-              <div class="value">${escapeHtml(form.breed || '')}</div>
-            </div>
-            <div class="field">
-              <div class="label">Wiek</div>
-              <div class="value">${escapeHtml(form.age || '')}</div>
-            </div>
-            <div class="field">
-              <div class="label">Waga</div>
-              <div class="value">${escapeHtml(form.weight || '')}</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="section">
-          <div class="section-title">Wywiad</div>
-          <div class="grid">
-            <div class="field">
-              <div class="label">Choroby przewlekłe</div>
-              <div class="value">${escapeHtml(form.historyChronic || '')}</div>
-            </div>
-            <div class="field">
-              <div class="label">Leki / alergie</div>
-              <div class="value">${escapeHtml(form.historyMedsAllergies || '')}</div>
-            </div>
-            <div class="field">
-              <div class="label">Poprzednie znieczulenia</div>
-              <div class="value">${escapeHtml(form.historyPrevAnesthesia || '')}</div>
-            </div>
-            <div class="field">
-              <div class="label">Charakter</div>
-              <div class="value">${escapeHtml(formatTemperament(form.temperament))}</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="section">
-          <div class="section-title">Plan znieczulenia</div>
-          <div class="grid">
-            <div class="field">
-              <div class="label">Premedykacja</div>
-              <div class="value">${escapeHtml(form.planPremed || '')}</div>
-            </div>
-            <div class="field">
-              <div class="label">Indukcja</div>
-              <div class="value">${escapeHtml(form.planInduction || '')}</div>
-            </div>
-            <div class="field">
-              <div class="label">Podtrzymanie</div>
-              <div class="value">${escapeHtml(form.planMaintenance || '')}</div>
-            </div>
-            <div class="field">
-              <div class="label">Analgezja</div>
-              <div class="value">${escapeHtml(form.planAnalgesia || '')}</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="section">
-          <div class="section-title">Przebieg zabiegu</div>
-          <div class="grid">
-            <div class="field">
-              <div class="label">Rozpoczęcie zabiegu</div>
-              <div class="value">${escapeHtml(form.surgeryStart || '')}</div>
-            </div>
-            <div class="field">
-              <div class="label">Zakończenie zabiegu</div>
-              <div class="value">${escapeHtml(form.surgeryEnd || '')}</div>
-            </div>
-            <div class="field">
-              <div class="label">Lekarz operujący</div>
-              <div class="value">${escapeHtml(form.surgeon || '')}</div>
-            </div>
-            <div class="field">
-              <div class="label">Asysta</div>
-              <div class="value">${escapeHtml(form.assistant || '')}</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="section">
-          <div class="section-title">Dawki leków</div>
-          <table>
-            <thead>
-              <tr>
-                <th>Lek</th>
-                <th>Dawka</th>
-                <th>Droga</th>
-                <th>Uwagi</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${renderPrintableDrugRows(form.drugTable, false)}
-            </tbody>
-          </table>
-        </div>
-
-        <div class="section">
-          <div class="section-title">Leki śródzabiegowe</div>
-          <table>
-            <thead>
-              <tr>
-                <th>Lek</th>
-                <th>Dawka</th>
-                <th>Godzina</th>
-                <th>Uwagi</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${renderPrintableDrugRows(form.intraopDrugs, true)}
-            </tbody>
-          </table>
-        </div>
-
-        <div class="section">
-          <div class="section-title">Parametry podczas zabiegu</div>
-          <table>
-            <thead>
-              <tr>
-                <th>Czas</th>
-                <th>HR</th>
-                <th>SpO2</th>
-                <th>EtCO2</th>
-                <th>Temp</th>
-                <th>Ciśnienie</th>
-                <th>MAC %</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${renderPrintableVitalsRows(form.vitals)}
-            </tbody>
-          </table>
-        </div>
-
-        <div class="footer">
-          Wygenerowano: ${escapeHtml(new Date().toLocaleString('pl-PL'))}
-        </div>
-      </div>
-    </body>
-    </html>
-  `;
-}
-
-function openSystemPrintPreview() {
-  const printableHtml = buildPrintableHtml(state.form);
-  const printWindow = window.open('', '_blank');
-
-  if (!printWindow) {
-    alert('Nie udało się otworzyć widoku wydruku.');
+  if (!element) {
+    alert('Nie znaleziono danych do wydruku.');
     return;
   }
 
-  printWindow.document.open();
-  printWindow.document.write(printableHtml);
-  printWindow.document.close();
+  const patientName = (state.form.animalName || 'pacjent')
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9\-ąćęłńóśźż]/gi, '');
+
+  const opt = {
+    margin: 10,
+    filename: `plan-anestezjologiczny-${patientName || 'pacjent'}-${new Date().toISOString().slice(0, 10)}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: {
+      scale: 2,
+      useCORS: true
+    },
+    jsPDF: {
+      unit: 'mm',
+      format: 'a4',
+      orientation: 'portrait'
+    },
+    pagebreak: { mode: ['css', 'legacy'] }
+  };
+
+  html2pdf().set(opt).from(element).save();
 }
 
 document.addEventListener('visibilitychange', () => {
@@ -3038,25 +2735,5 @@ window.addEventListener('pagehide', () => {
   if (state.unlocked) saveDraft();
 });
 
-function generatePDF() {
-  const element = document.querySelector('.card');
-
-  if (!element) {
-    alert('Nie znaleziono danych do wydruku.');
-    return;
-  }
-
-  const opt = {
-    margin: 10,
-    filename: `plan-anestezjologiczny-${new Date().toISOString().slice(0, 10)}.pdf`,
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2 },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-  };
-
-  html2pdf().set(opt).from(element).save();
-}
-
 applyTheme();
 render();
-
