@@ -625,10 +625,7 @@ function calculateDoseValues(weight, preset) {
     totalMl = mgMl > 0 ? totalMg / mgMl : 0;
   }
 
-  return {
-    totalMg,
-    totalMl
-  };
+  return { totalMg, totalMl };
 }
 
 function buildProtocolPreview(protocol, species, weight) {
@@ -792,9 +789,7 @@ function bindBreedSuggestionButtons() {
       saveDraft();
 
       const breedInput = document.getElementById('breedInput');
-      if (breedInput) {
-        breedInput.value = state.form.breed;
-      }
+      if (breedInput) breedInput.value = state.form.breed;
 
       updateBreedSuggestions();
     };
@@ -808,9 +803,7 @@ function getDrugSuggestions() {
   let filtered = DRUG_PRESETS;
 
   if (species) {
-    filtered = filtered.filter(
-      (drug) => drug.species === 'Oba' || drug.species === species
-    );
+    filtered = filtered.filter((drug) => drug.species === 'Oba' || drug.species === species);
   }
 
   if (!value) {
@@ -829,10 +822,7 @@ function getDrugSuggestions() {
   }
 
   const found = filtered.filter((drug) =>
-    [drug.name, drug.category, drug.species, drug.note]
-      .join(' ')
-      .toLowerCase()
-      .includes(value)
+    [drug.name, drug.category, drug.species, drug.note].join(' ').toLowerCase().includes(value)
   );
 
   const unique = [];
@@ -1445,7 +1435,7 @@ function mainView() {
         <div>
           <div class="toolbar no-print">
             <button class="btn primary-btn" id="saveBtn">Zapisz</button>
-            <button class="btn secondary" id="printBtn">PDF TEST 777</button>
+            <button class="btn secondary" id="printBtn">Podglad wydruku</button>
             <button class="btn secondary" id="samePatientBtn">Nowa karta tego pacjenta</button>
           </div>
 
@@ -1893,13 +1883,8 @@ function refreshVitalsAlertsOnly() {
 
     input.classList.remove('vital-alert-warning', 'vital-alert-danger');
 
-    if (level === 'warning') {
-      input.classList.add('vital-alert-warning');
-    }
-
-    if (level === 'danger') {
-      input.classList.add('vital-alert-danger');
-    }
+    if (level === 'warning') input.classList.add('vital-alert-warning');
+    if (level === 'danger') input.classList.add('vital-alert-danger');
   });
 
   const alertBox = document.getElementById('vitalsAlertsContainer');
@@ -2199,9 +2184,7 @@ function bind() {
 
       saveDraft();
 
-      if (field === 'breed') {
-        updateBreedSuggestions();
-      }
+      if (field === 'breed') updateBreedSuggestions();
     };
 
     el.onchange = (e) => {
@@ -2217,9 +2200,7 @@ function bind() {
 
       saveDraft();
 
-      if (field === 'breed') {
-        updateBreedSuggestions();
-      }
+      if (field === 'breed') updateBreedSuggestions();
     };
   });
 
@@ -2280,13 +2261,12 @@ function bind() {
   if (sv) sv.onclick = saveCurrent;
 
   const pr = document.getElementById('printBtn');
-if (pr) {
-  pr.onclick = () => {
-    alert('klik działa');
-    state.currentPage = 'printPreview';
-    render();
-  };
-}
+  if (pr) {
+    pr.onclick = () => {
+      state.currentPage = 'printPreview';
+      render();
+    };
+  }
 
   const same = document.getElementById('samePatientBtn');
   if (same) {
@@ -2443,39 +2423,47 @@ function escapeHtml(s = '') {
 }
 
 function formatTemperament(temp) {
-  return Object.entries(temp || {})
-    .filter(([, value]) => value)
-    .map(([key]) => cap(key))
-    .join(', ') || '-';
+  return (
+    Object.entries(temp || {})
+      .filter(([, value]) => value)
+      .map(([key]) => cap(key))
+      .join(', ') || '-'
+  );
 }
 
 function renderPrintableDrugRows(rows, intra = false) {
-  return (rows || [])
-    .filter((row) =>
-      Object.values(row).some((value) => String(value || '').trim() !== '')
-    )
-    .map((row) => `
+  return (
+    rows
+      .filter((row) => Object.values(row).some((value) => String(value || '').trim() !== ''))
+      .map(
+        (row) => `
       <tr>
         <td>${escapeHtml(row.name || '')}</td>
         <td>${escapeHtml(row.dose || '')}</td>
-        <td>${escapeHtml(intra ? (row.hour || '') : (row.route || ''))}</td>
+        <td>${escapeHtml(intra ? row.hour || '' : row.route || '')}</td>
         <td>${escapeHtml(row.notes || '')}</td>
       </tr>
-    `)
-    .join('') || `
+    `
+      )
+      .join('') ||
+    `
       <tr>
         <td colspan="4">Brak danych</td>
       </tr>
-    `;
+    `
+  );
 }
 
 function renderPrintableVitalsRows(rows) {
-  return (rows || [])
-    .filter((row) =>
-      ['time', 'hr', 'spo2', 'etco2', 'temp', 'pressure', 'mac']
-        .some((key) => String(row[key] || '').trim() !== '')
-    )
-    .map((row) => `
+  return (
+    rows
+      .filter((row) =>
+        ['time', 'hr', 'spo2', 'etco2', 'temp', 'pressure', 'mac'].some(
+          (key) => String(row[key] || '').trim() !== ''
+        )
+      )
+      .map(
+        (row) => `
       <tr>
         <td>${escapeHtml(row.time || '')}</td>
         <td>${escapeHtml(row.hr || '')}</td>
@@ -2485,12 +2473,15 @@ function renderPrintableVitalsRows(rows) {
         <td>${escapeHtml(row.pressure || '')}</td>
         <td>${escapeHtml(row.mac || '')}</td>
       </tr>
-    `)
-    .join('') || `
+    `
+      )
+      .join('') ||
+    `
       <tr>
         <td colspan="7">Brak danych</td>
       </tr>
-    `;
+    `
+  );
 }
 
 function renderPrintableCardMarkup(form) {
@@ -2699,7 +2690,12 @@ function generatePDF() {
   const element = document.getElementById('pdfContent');
 
   if (!element) {
-    alert('Nie znaleziono danych do wydruku.');
+    alert('Nie znaleziono danych do PDF.');
+    return;
+  }
+
+  if (typeof html2pdf === 'undefined') {
+    alert('Biblioteka PDF nie została wczytana. Sprawdź index.html.');
     return;
   }
 
