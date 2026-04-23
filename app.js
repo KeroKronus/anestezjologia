@@ -2278,12 +2278,11 @@ function bind() {
   if (sv) sv.onclick = saveCurrent;
 
   const pr = document.getElementById('printBtn');
-  if (pr) {
-    pr.onclick = () => {
-      state.currentPage = 'printPreview';
-      render();
-    };
-  }
+if (pr) {
+  pr.onclick = () => {
+    generatePDF();
+  };
+}
 
   const same = document.getElementById('samePatientBtn');
   if (same) {
@@ -3039,5 +3038,25 @@ window.addEventListener('pagehide', () => {
   if (state.unlocked) saveDraft();
 });
 
+function generatePDF() {
+  const element = document.querySelector('.card');
+
+  if (!element) {
+    alert('Nie znaleziono danych do wydruku.');
+    return;
+  }
+
+  const opt = {
+    margin: 10,
+    filename: `plan-anestezjologiczny-${new Date().toISOString().slice(0, 10)}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
+
+  html2pdf().set(opt).from(element).save();
+}
+
 applyTheme();
 render();
+
