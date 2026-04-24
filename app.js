@@ -8,114 +8,217 @@ const APP_NAME = 'Anestezjologia';
 const defaultPin = '123071';
 
 const DOG_BREEDS = [
+  'Affenpinscher',
   'Airedale Terrier',
   'Akita',
   'Alaskan Malamute',
+  'American Bully',
+  'American Cocker Spaniel',
+  'American Eskimo Dog',
+  'American Foxhound',
   'American Staffordshire Terrier',
+  'Australian Cattle Dog',
   'Australian Shepherd',
+  'Australian Silky Terrier',
+  'Basenji',
   'Basset Hound',
   'Beagle',
+  'Bearded Collie',
+  'Beauceron',
+  'Bedlington Terrier',
   'Berneński pies pasterski',
   'Bichon Frise',
-  'Border Collie',
-  'Boston Terrier',
+  'Bloodhound',
   'Bokser',
+  'Bolończyk',
+  'Border Collie',
+  'Border Terrier',
+  'Boston Terrier',
+  'Briard',
   'Bull Terrier',
   'Bulldog angielski',
   'Bulldog francuski',
+  'Bullmastiff',
+  'Cairn Terrier',
   'Cane Corso',
   'Cavalier King Charles Spaniel',
-  'Chihuahua',
+  'Charcik włoski',
+  'Chart afgański',
   'Chart polski',
+  'Chihuahua',
+  'Chinese Crested Dog',
+  'Chow Chow',
   'Cocker Spaniel angielski',
   'Collie długowłosy',
+  'Collie krótkowłosy',
+  'Coton de Tulear',
   'Dalmatyńczyk',
   'Doberman',
+  'Dog argentyński',
+  'Dog de Bordeaux',
   'Dog niemiecki',
+  'English Springer Spaniel',
+  'Entlebucher',
+  'Eurasier',
+  'Field Spaniel',
+  'Fila Brasileiro',
+  'Flat Coated Retriever',
+  'Fox Terrier krótkowłosy',
+  'Fox Terrier szorstkowłosy',
   'Golden Retriever',
   'Gończy polski',
   'Greyhound',
+  'Gryfonik brukselski',
+  'Hawańczyk',
   'Hiszpański pies wodny',
   'Hovawart',
+  'Irish Soft Coated Wheaten Terrier',
+  'Irish Terrier',
+  'Irish Wolfhound',
   'Jack Russell Terrier',
+  'Jamnik długowłosy',
   'Jamnik krótkowłosy',
+  'Jamnik szorstkowłosy',
+  'Kai',
+  'Keeshond',
+  'King Charles Spaniel',
   'Labrador Retriever',
   'Lagotto Romagnolo',
+  'Lakeland Terrier',
   'Landseer',
+  'Leonberger',
+  'Lhasa Apso',
   'Maltańczyk',
+  'Manchester Terrier',
+  'Mastif angielski',
+  'Mastif neapolitański',
   'Mastif tybetański',
+  'Miniature American Shepherd',
+  'Mops',
+  'Mudi',
+  'Norfolk Terrier',
+  'Norwich Terrier',
   'Nova Scotia Duck Tolling Retriever',
   'Nowofundland',
-  'Owczarek belgijski',
+  'Owczarek australijski Kelpie',
+  'Owczarek belgijski Groenendael',
+  'Owczarek belgijski Laekenois',
+  'Owczarek belgijski Malinois',
+  'Owczarek belgijski Tervueren',
+  'Owczarek kaukaski',
   'Owczarek niemiecki',
   'Owczarek podhalański',
+  'Owczarek szkocki długowłosy',
   'Papillon',
+  'Parson Russell Terrier',
   'Pekińczyk',
+  'Petit Basset Griffon Vendeen',
+  'Pinczer austriacki',
   'Pinczer miniaturowy',
+  'Pinczer średni',
   'Pointer angielski',
+  'Polski owczarek nizinny',
+  'Pomeranian',
   'Pudel duży',
   'Pudel miniaturowy',
-  'Pudel średni',
   'Pudel toy',
+  'Pudel średni',
+  'Puli',
   'Rhodesian Ridgeback',
   'Rottweiler',
   'Samojed',
+  'Schipperke',
   'Schnauzer miniaturowy',
-  'Schnauzer średni',
   'Schnauzer olbrzym',
+  'Schnauzer średni',
+  'Seter angielski',
+  'Seter irlandzki',
+  'Seter szkocki Gordon',
   'Shar Pei',
+  'Sheltie',
   'Shiba',
   'Shih Tzu',
+  'Siberian Husky',
+  'Skye Terrier',
+  'Spaniel kontynentalny miniaturowy',
   'Springer Spaniel angielski',
+  'Staffordshire Bull Terrier',
+  'Terier australijski',
+  'Terier irlandzki',
+  'Terier szkocki',
   'Terier walijski',
+  'Tosa Inu',
   'Welsh Corgi Cardigan',
   'Welsh Corgi Pembroke',
   'West Highland White Terrier',
   'Whippet',
+  'Wyżeł czeski fousek',
   'Wyżeł niemiecki krótkowłosy',
+  'Wyżeł niemiecki szorstkowłosy',
   'Wyżeł weimarski',
+  'Wyżeł węgierski krótkowłosy',
+  'Wyżeł węgierski szorstkowłosy',
   'Yorkshire Terrier'
 ];
 
 const CAT_BREEDS = [
   'Abyssinian',
+  'American Bobtail Longhair',
+  'American Bobtail Shorthair',
   'American Curl Longhair',
   'American Curl Shorthair',
+  'American Shorthair',
+  'American Wirehair',
+  'Australian Mist',
   'Balinese',
   'Bengal',
   'Birman',
+  'Bombay',
   'British Longhair',
   'British Shorthair',
   'Burmese',
   'Burmilla',
   'Chartreux',
+  'Chausie',
   'Cornish Rex',
   'Cymric',
   'Devon Rex',
   'Don Sphynx',
+  'Egyptian Mau',
   'European',
   'Exotic',
   'German Rex',
+  'Havana Brown',
   'Japanese Bobtail Longhair',
   'Japanese Bobtail Shorthair',
+  'Khao Manee',
   'Korat',
   'Kurilean Bobtail Longhair',
   'Kurilean Bobtail Shorthair',
   'LaPerm Longhair',
   'LaPerm Shorthair',
+  'Lykoi',
   'Maine Coon',
   'Manx',
+  'Munchkin',
+  'Nebelung',
+  'Neva Masquerade',
   'Norwegian Forest Cat',
   'Ocicat',
   'Oriental Longhair',
   'Oriental Shorthair',
   'Persian',
   'Peterbald',
+  'Pixie-bob',
+  'Ragamuffin',
   'Ragdoll',
   'Russian Blue',
-  'Sacred Birman',
+  'Savannah',
+  'Scottish Fold Longhair',
+  'Scottish Fold Shorthair',
   'Selkirk Rex Longhair',
   'Selkirk Rex Shorthair',
+  'Serengeti',
   'Siamese',
   'Siberian',
   'Singapura',
@@ -124,8 +227,11 @@ const CAT_BREEDS = [
   'Somali',
   'Sphynx',
   'Thai',
+  'Tonkinese',
+  'Toyger',
   'Turkish Angora',
-  'Turkish Van'
+  'Turkish Van',
+  'Ukrainian Levkoy'
 ];
 
 const DRUG_PRESETS = [
@@ -146,24 +252,12 @@ const DRUG_PRESETS = [
   { name: 'Glikopirolat', species: 'Oba', category: 'Premedykacja', mgMl: 0.2, mgKg: 0.01, mgKgOptions: [], mlPerKg: '', route: 'IM', routeOptions: ['IM', 'IV'], note: 'Alternatywa dla atropiny.' },
   { name: 'Meloksykam', species: 'Oba', category: 'NLPZ', mgMl: 5, mgKg: 0.2, mgKgOptions: [], mlPerKg: '', route: 'SC', routeOptions: ['SC', 'IV'], note: 'Sprawdzić nawodnienie i nerki.' },
   { name: 'Metacam', species: 'Oba', category: 'NLPZ', mgMl: 20, mgKg: '', mgKgOptions: [], mlPerKg: 0.04, route: 'SC', routeOptions: ['SC', 'IV'], note: 'Schemat: 0.4 ml / 10 kg' },
-  { name: 'Biovetalgin', species: 'Oba', category: 'Analgezja', mgMl: 500, mgKg: '', mgKgOptions: [], mlPerKg: 0.1, route: 'SC', routeOptions: ['SC', 'IM'], note: 'Schemat: 1 ml / 10 kg' },
+  { name: 'Biovetalgin', species: 'Oba', category: 'Analgezja', mgMl: 500, mgKg: '', mgKgOptions: [], mlPerKg: 0.1, route: 'SC', routeOptions: ['SC', 'IM'], note: 'Schemat: 1 ml / 10 kg • SC/IM' },
   { name: 'Biofazolin', species: 'Oba', category: 'Antybiotyk', mgMl: '', mgKg: '', mgKgOptions: [], mlPerKg: 0.2, route: 'IV', routeOptions: ['IV'], note: 'Schemat: 1 ml / 5 kg' },
   { name: 'Cefazolina', species: 'Oba', category: 'Antybiotyk', mgMl: 100, mgKg: 22, mgKgOptions: [], mlPerKg: '', route: 'IV', routeOptions: ['IV'], note: 'Często okołooperacyjnie.' },
   { name: 'Lidokaina', species: 'Pies', category: 'Miejscowe / CRI', mgMl: 20, mgKg: 2, mgKgOptions: [], mlPerKg: '', route: 'IV', routeOptions: ['IV', 'Miejscowo'], note: 'Do bolusa lub CRI według schematu.' },
   { name: 'Bupiwakaina', species: 'Oba', category: 'Miejscowe', mgMl: 5, mgKg: 2, mgKgOptions: [], mlPerKg: '', route: 'Miejscowo', routeOptions: ['Miejscowo'], note: 'Blokady miejscowe.' },
-  { name: 'Maropitant', species: 'Oba', category: 'Przeciwwymiotny', mgMl: 10, mgKg: 1, mgKgOptions: [], mlPerKg: '', route: 'SC', routeOptions: ['SC'], note: 'Przedmedykacja u pacjentów z ryzykiem wymiotów.' },
-  { name: 'Synulox', species: 'Oba', category: 'Antybiotyk', substance: 'amoksycylina + kwas klawulanowy', mgMl: '', mgKg: '', mgKgOptions: [], mlPerKg: 0.1, doseRangeMlPerKg: [0.05, 0.1], route: 'SC', routeOptions: ['SC', 'IM'], note: 'Antybiotyk: zakres 1 ml / 20 kg do 1 ml / 10 kg. Podanie SC/IM.' },
-  { name: 'Enroxil', species: 'Oba', category: 'Antybiotyk', substance: 'enrofloksacyna', mgMl: '', mgKg: '', mgKgOptions: [], mlPerKg: 0.1, route: 'SC', routeOptions: ['SC'], note: 'Antybiotyk: 1 ml / 10 kg. Wszystkie gatunki. Podanie SC.' },
-  { name: 'Tolfine', species: 'Oba', category: 'NLPZ / przeciwbólowy', substance: 'kwas tolfenamowy', mgMl: '', mgKg: '', mgKgOptions: [], mlPerKg: 0.1, route: 'SC', routeOptions: ['SC'], note: 'NLPZ: 1 ml / 10 kg. Podanie SC.' },
-  { name: 'Prevomax (maropitant)', species: 'Oba', category: 'Przeciwwymiotny', substance: 'maropitant', mgMl: '', mgKg: '', mgKgOptions: [], mlPerKg: 0.1, route: 'SC', routeOptions: ['SC'], note: 'Przeciwwymiotny: 1 ml / 10 kg. Podanie SC.' },
-  { name: 'Dexafast', species: 'Oba', category: 'Steryd / przeciwzapalny', substance: 'deksametazon', mgMl: '', mgKg: '', mgKgOptions: [], mlPerKg: 0.05, route: 'SC', routeOptions: ['SC', 'IM'], note: 'Steryd: 0.5 ml / 10 kg. Podanie SC/IM.' },
-  { name: 'Lincospectin', species: 'Oba', category: 'Antybiotyk', substance: 'linkomycyna + spektinomycyna', mgMl: '', mgKg: '', mgKgOptions: [], mlPerKg: 0.2, route: 'SC', routeOptions: ['SC'], note: 'Antybiotyk: 1 ml / 5 kg. Podanie SC.' },
-  { name: 'Clamoxyl', species: 'Oba', category: 'Antybiotyk', substance: 'amoksycylina', mgMl: '', mgKg: '', mgKgOptions: [], mlPerKg: 0.1, route: 'SC', routeOptions: ['SC'], note: 'Antybiotyk: 1 ml / 10 kg. Podanie SC.' },
-  { name: 'Catosal', species: 'Oba', category: 'Wspomagający / metaboliczny', substance: 'butafosfan + cyjanokobalamina', mgMl: '', mgKg: '', mgKgOptions: [], mlPerKg: 0.1, route: 'SC', routeOptions: ['SC'], note: 'Preparat wspomagający: 1 ml / 10 kg. Podanie SC.' },
-  { name: 'Marfloxin', species: 'Pies', category: 'Antybiotyk', substance: 'marbofloksacyna', mgMl: '', mgKg: 2, mgKgOptions: [], mlPerKg: 0.1, route: 'SC', routeOptions: ['SC'], note: 'Pies: 2 mg/kg, praktycznie 1 ml / 10 kg. Podanie SC.' },
-  { name: 'Marfloxin', species: 'Kot', category: 'Antybiotyk', substance: 'marbofloksacyna', mgMl: '', mgKg: 2, mgKgOptions: [], mlPerKg: 0.1, route: 'SC', routeOptions: ['SC'], note: 'Kot: 2 mg/kg, praktycznie 0.5 ml / 5 kg. Podanie SC.' },
-  { name: 'Vecort', species: 'Oba', category: 'Steryd / przeciwzapalny', substance: 'kortykosteroid', mgMl: '', mgKg: '', mgKgOptions: [], mlPerKg: 0.05, route: 'SC', routeOptions: ['SC'], note: 'Steryd: 0.5 ml / 10 kg. Podanie SC.' },
-  { name: 'Furosemid 5%', species: 'Oba', category: 'Diuretyk', substance: 'furosemid', mgMl: '', mgKg: '', mgKgOptions: [], mlPerKg: 0.1, route: 'SC', routeOptions: ['SC', 'IV'], note: 'Diuretyk: 1 ml / 10 kg. Podanie SC/IV.' }
+  { name: 'Maropitant', species: 'Oba', category: 'Przeciwwymiotny', mgMl: 10, mgKg: 1, mgKgOptions: [], mlPerKg: '', route: 'SC', routeOptions: ['SC'], note: 'Przedmedykacja u pacjentów z ryzykiem wymiotów.' }
 ];
 
 const PROTOCOL_PRESETS = [
@@ -254,11 +348,7 @@ let state = {
   doseMlPerKg: '',
   dosePresetNote: '',
   doseRoute: '',
-  doseMgKgChoice: '',
-  librarySearch: '',
-  librarySpecies: '',
-  libraryWeight: '',
-  libraryDrugName: ''
+  doseMgKgChoice: ''
 };
 
 function loadRecords() {
@@ -552,7 +642,7 @@ function getDrugSuggestions() {
   }
 
   const found = filtered.filter((drug) =>
-    [drug.name, drug.category, drug.species, drug.substance || '', drug.note].join(' ').toLowerCase().includes(value)
+    [drug.name, drug.category, drug.species, drug.note].join(' ').toLowerCase().includes(value)
   );
 
   const unique = [];
@@ -817,8 +907,6 @@ function render() {
       app.innerHTML = mainView();
     } else if (state.currentPage === 'dawki') {
       app.innerHTML = dosesView();
-    } else if (state.currentPage === 'biblioteka') {
-      app.innerHTML = libraryView();
     } else if (state.currentPage === 'ustawienia') {
       app.innerHTML = settingsView();
     } else if (state.currentPage === 'podziekowania') {
@@ -887,25 +975,19 @@ function homeView() {
 
         <button class="menu-card menu-card-dose" data-nav="dawki">
           <div class="menu-icon">💉</div>
-          <div class="menu-title">2. Kalkulator zabiegowy</div>
-          <div class="menu-sub">Dawki, premedykacja i gotowe protokoły</div>
-        </button>
-
-        <button class="menu-card menu-card-library" data-nav="biblioteka">
-          <div class="menu-icon">📚</div>
-          <div class="menu-title">3. Biblioteka leków</div>
-          <div class="menu-sub">Baza leków z szybkim przeliczeniem dawki</div>
+          <div class="menu-title">2. Liczba dawek</div>
+          <div class="menu-sub">Kalkulator dawek i gotowe protokoły</div>
         </button>
 
         <button class="menu-card menu-card-settings" data-nav="ustawienia">
           <div class="menu-icon">⚙️</div>
-          <div class="menu-title">4. Ustawienia</div>
+          <div class="menu-title">3. Ustawienia</div>
           <div class="menu-sub">PIN aplikacji, motyw i przyszłe opcje personalizacji</div>
         </button>
 
         <button class="menu-card menu-card-thanks" data-nav="podziekowania">
           <div class="menu-icon">🙏</div>
-          <div class="menu-title">5. Szczególne podziękowania</div>
+          <div class="menu-title">4. Szczególne podziękowania</div>
           <div class="menu-sub">Autor aplikacji i podziękowania</div>
         </button>
       </div>
@@ -1050,177 +1132,6 @@ function dosesView() {
   `;
 }
 
-
-function formatDoseNumber(value) {
-  const n = Number(value || 0);
-  if (!Number.isFinite(n)) return '0';
-  if (n === 0) return '0';
-  if (Math.abs(n) < 1) return n.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
-  return n.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
-}
-
-function getLibraryDrugs() {
-  const q = (state.librarySearch || '').trim().toLowerCase();
-  const species = state.librarySpecies || '';
-  return DRUG_PRESETS.filter((drug) => {
-    const speciesOk = !species || drug.species === 'Oba' || drug.species === species;
-    const haystack = [drug.name, drug.category, drug.species, drug.substance || '', drug.note || '', drug.route || '']
-      .join(' ')
-      .toLowerCase();
-    return speciesOk && (!q || haystack.includes(q));
-  });
-}
-
-function getDrugMlResult(drug, weightValue) {
-  const weight = Number(weightValue || 0);
-  if (weight <= 0) return 'Wpisz masę ciała';
-
-  if (Array.isArray(drug.doseRangeMlPerKg) && drug.doseRangeMlPerKg.length === 2) {
-    const min = weight * Number(drug.doseRangeMlPerKg[0]);
-    const max = weight * Number(drug.doseRangeMlPerKg[1]);
-    return `${formatDoseNumber(min)}–${formatDoseNumber(max)} ml`;
-  }
-
-  const mlPerKg = Number(drug.mlPerKg || 0);
-  if (mlPerKg > 0) return `${formatDoseNumber(weight * mlPerKg)} ml`;
-
-  const mgKg = Number(drug.mgKg || 0);
-  const mgMl = Number(drug.mgMl || 0);
-  if (mgKg > 0 && mgMl > 0) return `${formatDoseNumber((weight * mgKg) / mgMl)} ml`;
-  if (mgKg > 0) return `${formatDoseNumber(weight * mgKg)} mg`;
-
-  return 'Brak danych do wyliczenia';
-}
-
-function getSelectedLibraryDrug() {
-  if (!state.libraryDrugName) return null;
-  const species = state.librarySpecies || '';
-  return DRUG_PRESETS.find(
-    (drug) =>
-      drug.name === state.libraryDrugName &&
-      (!species || drug.species === 'Oba' || drug.species === species)
-  ) || DRUG_PRESETS.find((drug) => drug.name === state.libraryDrugName) || null;
-}
-
-function renderLibraryListMarkup() {
-  const drugs = getLibraryDrugs();
-  if (!drugs.length) return `<div class="small">Nie znaleziono leku.</div>`;
-
-  return drugs
-    .map((drug) => `
-      <button type="button" class="drug-library-pick ${state.libraryDrugName === drug.name ? 'active' : ''}" data-library-drug="${escapeHtml(drug.name)}">
-        <div>
-          <div class="menu-title">${escapeHtml(drug.name)}</div>
-          <div class="small">${escapeHtml(drug.category || '')}${drug.substance ? ' • ' + escapeHtml(drug.substance) : ''}</div>
-        </div>
-        <span class="badge">${escapeHtml(drug.species || 'Oba')}</span>
-      </button>
-    `)
-    .join('');
-}
-
-function renderLibraryCalculatorMarkup() {
-  const drug = getSelectedLibraryDrug();
-
-  if (!drug) {
-    return `
-      <div class="card inner-card">
-        <div class="card-body">
-          <h3>Kalkulator</h3>
-          <div class="small">Najpierw wybierz lek z listy po lewej, potem wpisz masę ciała.</div>
-        </div>
-      </div>
-    `;
-  }
-
-  return `
-    <div class="card inner-card">
-      <div class="card-body">
-        <h3>${escapeHtml(drug.name)}</h3>
-        <div class="small">${escapeHtml(drug.category || '')}${drug.substance ? ' • ' + escapeHtml(drug.substance) : ''}</div>
-
-        <div class="space-16"></div>
-
-        <label class="label">Masa ciała (kg)</label>
-        <input id="libraryWeight" type="number" inputmode="decimal" step="0.01" value="${escapeHtml(state.libraryWeight || state.doseWeight || state.form.weight || '')}" placeholder="Np. 12.5">
-
-        <div class="space-16"></div>
-
-        <div class="results-grid">
-          <div class="result-box">
-            <div class="result-label">Wynik</div>
-            <div class="result-value small-result" id="libraryResult">${escapeHtml(getDrugMlResult(drug, state.libraryWeight || state.doseWeight || state.form.weight || ''))}</div>
-          </div>
-          <div class="result-box">
-            <div class="result-label">Droga podania</div>
-            <div class="result-value small-result">${escapeHtml((drug.routeOptions || [drug.route || '']).filter(Boolean).join(' / '))}</div>
-          </div>
-        </div>
-
-        <div class="space-12"></div>
-        <div class="small drug-note">${escapeHtml(drug.note || '')}</div>
-      </div>
-    </div>
-  `;
-}
-
-function refreshLibraryListOnly() {
-  const box = document.getElementById('libraryList');
-  if (box) box.innerHTML = renderLibraryListMarkup();
-  bindLibraryDrugButtons();
-}
-
-function refreshLibraryCalculatorOnly() {
-  const box = document.getElementById('libraryCalculator');
-  if (box) box.innerHTML = renderLibraryCalculatorMarkup();
-  bindLibraryWeightInput();
-}
-
-function libraryView() {
-  return `
-    <div class="app">
-      <div class="toolbar">
-        <button class="btn secondary" id="backHomeBtn">Powrót do menu</button>
-      </div>
-
-      <div class="card">
-        <div class="card-body">
-          <h3>Biblioteka leków</h3>
-          <div class="small">Osobna baza leków z kalkulatorem objętości. Wyszukiwarka działa bez przeładowywania całego ekranu.</div>
-
-          <div class="space-16"></div>
-
-          <div class="grid g2">
-            <div>
-              <label class="label">Szukaj leku</label>
-              <input id="librarySearch" value="${escapeHtml(state.librarySearch || '')}" placeholder="Np. synulox, antybiotyk, maropitant" autocomplete="off">
-            </div>
-            <div>
-              <label class="label">Gatunek</label>
-              <select id="librarySpecies">
-                <option value="">Wszystkie</option>
-                <option value="Pies" ${state.librarySpecies === 'Pies' ? 'selected' : ''}>Pies</option>
-                <option value="Kot" ${state.librarySpecies === 'Kot' ? 'selected' : ''}>Kot</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="space-16"></div>
-
-          <div class="library-layout">
-            <div id="libraryList" class="drug-library-list">
-              ${renderLibraryListMarkup()}
-            </div>
-            <div id="libraryCalculator">
-              ${renderLibraryCalculatorMarkup()}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
-}
-
 function settingsView() {
   return `
     <div class="app">
@@ -1262,7 +1173,12 @@ function thanksView() {
       <div class="card">
         <div class="card-body">
           <h3>Szczególne podziękowania</h3>
-          <p>Dziękuję wszystkim, którzy wspierają rozwój tej aplikacji.</p>
+          <p>
+            Szczególne podziękowania kieruję do mojej przyjaciółki Honoraty za ogromne wsparcie, motywację i wiarę w ten projekt od samego początku.
+          </p>
+          <p>
+            Dziękuję za bycie pierwszą osobą testującą aplikację oraz za wszystkie cenne uwagi, które realnie przyczyniły się do jej rozwoju.
+          </p>
           <p><strong>Autor:</strong> ${AUTHOR}</p>
         </div>
       </div>
@@ -1883,29 +1799,6 @@ function addDoseToPlan() {
   alert('Dodano lek do planu leków.');
 }
 
-
-function bindLibraryDrugButtons() {
-  document.querySelectorAll('[data-library-drug]').forEach((el) => {
-    el.onclick = () => {
-      state.libraryDrugName = el.dataset.libraryDrug || '';
-      refreshLibraryListOnly();
-      refreshLibraryCalculatorOnly();
-    };
-  });
-}
-
-function bindLibraryWeightInput() {
-  const libraryWeight = document.getElementById('libraryWeight');
-  if (!libraryWeight) return;
-  if (!state.libraryWeight && libraryWeight.value) state.libraryWeight = libraryWeight.value;
-  libraryWeight.oninput = (e) => {
-    state.libraryWeight = e.target.value;
-    const drug = getSelectedLibraryDrug();
-    const result = document.getElementById('libraryResult');
-    if (result && drug) result.textContent = getDrugMlResult(drug, state.libraryWeight);
-  };
-}
-
 function bind() {
   if (!state.unlocked) {
     const unlockBtn = document.getElementById('unlockBtn');
@@ -1975,29 +1868,6 @@ function bind() {
       render();
     };
   }
-
-
-  const librarySearch = document.getElementById('librarySearch');
-  if (librarySearch) {
-    librarySearch.oninput = (e) => {
-      state.librarySearch = e.target.value;
-      refreshLibraryListOnly();
-    };
-  }
-
-  const librarySpecies = document.getElementById('librarySpecies');
-  if (librarySpecies) {
-    librarySpecies.onchange = (e) => {
-      state.librarySpecies = e.target.value;
-      const selected = getSelectedLibraryDrug();
-      if (!selected) state.libraryDrugName = '';
-      refreshLibraryListOnly();
-      refreshLibraryCalculatorOnly();
-    };
-  }
-
-  bindLibraryDrugButtons();
-  bindLibraryWeightInput();
 
   const doseTabCalculator = document.getElementById('doseTabCalculator');
   if (doseTabCalculator) {
