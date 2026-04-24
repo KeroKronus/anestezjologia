@@ -269,10 +269,28 @@ const DRUG_PRESETS = [
   { name: 'Marfloxin', species: 'Pies', category: 'Antybiotyk', substance: 'marbofloksacyna', mgMl: '', mgKg: 2, mgKgOptions: [], mlPerKg: 0.1, route: 'SC', routeOptions: ['SC'], note: 'Pies: 2 mg/kg, praktycznie 1 ml / 10 kg. Podanie SC.' },
   { name: 'Marfloxin', species: 'Kot', category: 'Antybiotyk', substance: 'marbofloksacyna', mgMl: '', mgKg: 2, mgKgOptions: [], mlPerKg: 0.1, route: 'SC', routeOptions: ['SC'], note: 'Kot: 2 mg/kg, praktycznie 0.5 ml / 5 kg. Podanie SC.' },
   { name: 'Vecort', species: 'Oba', category: 'Steryd / przeciwzapalny', substance: 'kortykosteroid', mgMl: '', mgKg: '', mgKgOptions: [], mlPerKg: 0.05, route: 'SC', routeOptions: ['SC'], note: 'Steryd: 0.5 ml / 10 kg. Podanie SC.' },
+  { name: 'Medetomidyna – chirurgiczna zdrowy pacjent', species: 'Pies', category: 'Premedykacja / protokół chirurgiczny', substance: 'medetomidyna', mgMl: 1, mgKg: '', mgKgOptions: [], mlPerKg: 0.01, route: 'IM', routeOptions: ['IM'], note: 'Pies: premedykacja do zabiegów chirurgicznych zdrowego pacjenta. Schemat: 0.01 ml/kg IM.' },
+  { name: 'Metadon – chirurgiczny zdrowy pacjent', species: 'Pies', category: 'Premedykacja / protokół chirurgiczny', substance: 'metadon', mgMl: 10, mgKg: '', mgKgOptions: [], mlPerKg: 0.02, route: 'IM', routeOptions: ['IM'], note: 'Pies: premedykacja do zabiegów chirurgicznych zdrowego pacjenta. Schemat: 0.02 ml/kg IM.' },
+  { name: 'Medetomidyna – chirurgiczna zdrowy pacjent', species: 'Kot', category: 'Premedykacja / protokół chirurgiczny', substance: 'medetomidyna', mgMl: 1, mgKg: '', mgKgOptions: [], mlPerKg: 0.04, route: 'IM', routeOptions: ['IM'], note: 'Kot: premedykacja do zabiegów chirurgicznych zdrowego pacjenta. Schemat: 0.2 ml / 5 kg IM.' },
+  { name: 'Metadon – chirurgiczny zdrowy pacjent', species: 'Kot', category: 'Premedykacja / protokół chirurgiczny', substance: 'metadon', mgMl: 10, mgKg: '', mgKgOptions: [], mlPerKg: 0.02, route: 'IM', routeOptions: ['IM'], note: 'Kot: premedykacja do zabiegów chirurgicznych zdrowego pacjenta. Schemat: 0.1 ml / 5 kg IM.' },
   { name: 'Furosemid 5%', species: 'Oba', category: 'Diuretyk', substance: 'furosemid', mgMl: '', mgKg: '', mgKgOptions: [], mlPerKg: 0.1, route: 'SC', routeOptions: ['SC', 'IV'], note: 'Diuretyk: 1 ml / 10 kg. Podanie SC/IV.' }
 ];
 
 const PROTOCOL_PRESETS = [
+  {
+    id: 'premed-chirurgia-zdrowy-pacjent',
+    name: 'Premedykacja do zabiegów chirurgicznych (zdrowy pacjent)',
+    short: 'Medetomidyna + metadon',
+    description: 'Gotowy protokół objętościowy dla zdrowego pacjenta: pies i kot.',
+    species: 'Oba',
+    target: 'Premedykacja',
+    drugs: [
+      { name: 'Medetomidyna', species: 'Pies', route: 'IM', mlPerKg: 0.01, doseLabel: '0.01 ml/kg', note: 'Pies: medetomidyna 0.01 ml/kg IM.' },
+      { name: 'Metadon', species: 'Pies', route: 'IM', mlPerKg: 0.02, doseLabel: '0.02 ml/kg', note: 'Pies: metadon 0.02 ml/kg IM.' },
+      { name: 'Medetomidyna', species: 'Kot', route: 'IM', mlPerKg: 0.04, doseLabel: '0.2 ml / 5 kg', note: 'Kot: medetomidyna 0.2 ml / 5 kg IM.' },
+      { name: 'Metadon', species: 'Kot', route: 'IM', mlPerKg: 0.02, doseLabel: '0.1 ml / 5 kg', note: 'Kot: metadon 0.1 ml / 5 kg IM.' }
+    ]
+  },
   { id: 'medetomidine-methadone-im', name: 'Medetomidyna + Metadon IM', short: 'Alfa2-agonista + opioid', description: 'Premedykacja domięśniowa: medetomidyna + metadon.', species: 'Oba', target: 'Premedykacja', drugs: [{ name: 'Medetomidyna', route: 'IM' }, { name: 'Metadon', route: 'IM' }] },
   { id: 'methadone-midazolam', name: 'Metadon + Midazolam', short: 'Opioid + benzodiazepina', description: 'Premedykacja / pacjent bólowy.', species: 'Oba', target: 'Premedykacja', drugs: [{ name: 'Metadon', route: 'IM' }, { name: 'Midazolam', route: 'IV' }] },
   { id: 'butorphanol-midazolam', name: 'Butorfanol + Midazolam', short: 'Badanie diagnostyczne', description: 'Spokojniejsze badanie diagnostyczne.', species: 'Oba', target: 'Premedykacja', drugs: [{ name: 'Butorfanol', route: 'IM' }, { name: 'Midazolam', route: 'IM' }] }
@@ -468,20 +486,39 @@ function buildProtocolPreview(protocol, species, weight) {
   if (!protocol || !species || !weight) return [];
 
   return protocol.drugs
+    .filter((item) => !item.species || item.species === 'Oba' || item.species === species)
     .map((item) => {
       const preset = getPresetByNameAndSpecies(item.name, species);
-      if (!preset) return null;
+      const route = item.route || preset?.route || '';
+      const w = Number(weight || 0);
+      const itemMlPerKg = Number(item.mlPerKg || 0);
 
-      const route = item.route || preset.route || '';
-      const { totalMg, totalMl } = calculateDoseValues(weight, preset);
+      let totalMg = 0;
+      let totalMl = 0;
+
+      if (itemMlPerKg > 0 && w > 0) {
+        totalMl = w * itemMlPerKg;
+        const mgMl = Number(preset?.mgMl || 0);
+        totalMg = mgMl > 0 ? totalMl * mgMl : 0;
+      } else if (preset) {
+        const calculated = calculateDoseValues(weight, preset);
+        totalMg = calculated.totalMg;
+        totalMl = calculated.totalMl;
+      } else {
+        return null;
+      }
+
+      const mgKg = item.mgKg !== undefined ? item.mgKg : preset?.mgKg;
+      const doseLabel = item.doseLabel || (mgKg !== '' && mgKg !== undefined ? `${mgKg} mg/kg` : 'wg schematu');
 
       return {
-        name: preset.name,
+        name: item.displayName || preset?.name || item.name,
         route,
-        mgKg: preset.mgKg !== '' ? preset.mgKg : '',
+        mgKg: mgKg !== '' && mgKg !== undefined ? mgKg : '',
+        doseLabel,
         totalMg,
         totalMl,
-        note: preset.note || ''
+        note: item.note || preset?.note || ''
       };
     })
     .filter(Boolean);
@@ -537,7 +574,7 @@ function addProtocolToPlan() {
   });
 
   const protocolText = `${protocol.name}: ${preview
-    .map((item) => `${item.name} ${item.mgKg !== '' ? item.mgKg + ' mg/kg' : ''} ${item.route}`.trim())
+    .map((item) => `${item.name} ${item.doseLabel || (item.mgKg !== '' ? item.mgKg + ' mg/kg' : '')} ${item.route}`.trim())
     .join(', ')}`;
 
   state.form.planPremed = state.form.planPremed
@@ -864,7 +901,7 @@ function renderProtocolPreviewMarkup() {
               (item) => `
             <div class="result-box">
               <div class="result-label">${escapeHtml(item.name)} • ${escapeHtml(item.route)}</div>
-              <div class="small">Dawka: ${item.mgKg !== '' ? escapeHtml(String(item.mgKg)) + ' mg/kg' : 'wg schematu'}</div>
+              <div class="small">Dawka: ${escapeHtml(item.doseLabel || (item.mgKg !== '' ? String(item.mgKg) + ' mg/kg' : 'wg schematu'))}</div>
               <div class="small">Wynik: ${item.totalMg.toFixed(2)} mg / ${item.totalMl.toFixed(2)} ml</div>
             </div>
           `
