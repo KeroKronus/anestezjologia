@@ -257,7 +257,8 @@ let state = {
   doseMgKgChoice: '',
   librarySearch: '',
   librarySpecies: '',
-  libraryWeight: ''
+  libraryWeight: '',
+  libraryDrugName: ''
 };
 
 function loadRecords() {
@@ -1050,6 +1051,14 @@ function dosesView() {
 }
 
 
+function formatDoseNumber(value) {
+  const n = Number(value || 0);
+  if (!Number.isFinite(n)) return '0';
+  if (n === 0) return '0';
+  if (Math.abs(n) < 1) return n.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
+  return n.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
+}
+
 function getLibraryDrugs() {
   const q = (state.librarySearch || '').trim().toLowerCase();
   const species = state.librarySpecies || '';
@@ -1083,39 +1092,88 @@ function getDrugMlResult(drug, weightValue) {
   return 'Brak danych do wyliczenia';
 }
 
+function getSelectedLibraryDrug() {
+  if (!state.libraryDrugName) return null;
+  const species = state.librarySpecies || '';
+  return DRUG_PRESETS.find(
+    (drug) =>
+      drug.name === state.libraryDrugName &&
+      (!species || drug.species === 'Oba' || drug.species === species)
+  ) || DRUG_PRESETS.find((drug) => drug.name === state.libraryDrugName) || null;
+}
+
 function renderLibraryListMarkup() {
   const drugs = getLibraryDrugs();
   if (!drugs.length) return `<div class="small">Nie znaleziono leku.</div>`;
 
   return drugs
     .map((drug) => `
-      <div class="drug-library-card">
-        <div class="drug-library-head">
-          <div>
-            <div class="menu-title">${escapeHtml(drug.name)}</div>
-            <div class="small">${escapeHtml(drug.category || '')}${drug.substance ? ' • ' + escapeHtml(drug.substance) : ''}</div>
-          </div>
-          <span class="badge">${escapeHtml(drug.species || 'Oba')}</span>
+      <button type="button" class="drug-library-pick ${state.libraryDrugName === drug.name ? 'active' : ''}" data-library-drug="${escapeHtml(drug.name)}">
+        <div>
+          <div class="menu-title">${escapeHtml(drug.name)}</div>
+          <div class="small">${escapeHtml(drug.category || '')}${drug.substance ? ' • ' + escapeHtml(drug.substance) : ''}</div>
         </div>
+        <span class="badge">${escapeHtml(drug.species || 'Oba')}</span>
+      </button>
+    `)
+    .join('');
+}
+
+function renderLibraryCalculatorMarkup() {
+  const drug = getSelectedLibraryDrug();
+
+  if (!drug) {
+    return `
+      <div class="card inner-card">
+        <div class="card-body">
+          <h3>Kalkulator</h3>
+          <div class="small">Najpierw wybierz lek z listy po lewej, potem wpisz masę ciała.</div>
+        </div>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="card inner-card">
+      <div class="card-body">
+        <h3>${escapeHtml(drug.name)}</h3>
+        <div class="small">${escapeHtml(drug.category || '')}${drug.substance ? ' • ' + escapeHtml(drug.substance) : ''}</div>
+
+        <div class="space-16"></div>
+
+        <label class="label">Masa ciała (kg)</label>
+        <input id="libraryWeight" type="number" inputmode="decimal" step="0.01" value="${escapeHtml(state.libraryWeight || state.doseWeight || state.form.weight || '')}" placeholder="Np. 12.5">
+
+        <div class="space-16"></div>
+
         <div class="results-grid">
           <div class="result-box">
-            <div class="result-label">Wynik dla masy ciała</div>
-            <div class="result-value small-result">${escapeHtml(getDrugMlResult(drug, state.libraryWeight))}</div>
+            <div class="result-label">Wynik</div>
+            <div class="result-value small-result" id="libraryResult">${escapeHtml(getDrugMlResult(drug, state.libraryWeight || state.doseWeight || state.form.weight || ''))}</div>
           </div>
           <div class="result-box">
             <div class="result-label">Droga podania</div>
             <div class="result-value small-result">${escapeHtml((drug.routeOptions || [drug.route || '']).filter(Boolean).join(' / '))}</div>
           </div>
         </div>
+
+        <div class="space-12"></div>
         <div class="small drug-note">${escapeHtml(drug.note || '')}</div>
       </div>
-    `)
-    .join('');
+    </div>
+  `;
 }
 
 function refreshLibraryListOnly() {
   const box = document.getElementById('libraryList');
   if (box) box.innerHTML = renderLibraryListMarkup();
+  bindLibraryDrugButtons();
+}
+
+function refreshLibraryCalculatorOnly() {
+  const box = document.getElementById('libraryCalculator');
+  if (box) box.innerHTML = renderLibraryCalculatorMarkup();
+  bindLibraryWeightInput();
 }
 
 function libraryView() {
@@ -1132,7 +1190,7 @@ function libraryView() {
 
           <div class="space-16"></div>
 
-          <div class="grid g3">
+          <div class="grid g2">
             <div>
               <label class="label">Szukaj leku</label>
               <input id="librarySearch" value="${escapeHtml(state.librarySearch || '')}" placeholder="Np. synulox, antybiotyk, maropitant" autocomplete="off">
@@ -1145,15 +1203,17 @@ function libraryView() {
                 <option value="Kot" ${state.librarySpecies === 'Kot' ? 'selected' : ''}>Kot</option>
               </select>
             </div>
-            <div>
-              <label class="label">Masa ciała (kg)</label>
-              <input id="libraryWeight" type="number" inputmode="decimal" step="0.01" value="${escapeHtml(state.libraryWeight || state.doseWeight || state.form.weight || '')}" placeholder="Np. 12.5">
-            </div>
           </div>
 
           <div class="space-16"></div>
-          <div id="libraryList" class="drug-library-list">
-            ${renderLibraryListMarkup()}
+
+          <div class="library-layout">
+            <div id="libraryList" class="drug-library-list">
+              ${renderLibraryListMarkup()}
+            </div>
+            <div id="libraryCalculator">
+              ${renderLibraryCalculatorMarkup()}
+            </div>
           </div>
         </div>
       </div>
@@ -1823,6 +1883,29 @@ function addDoseToPlan() {
   alert('Dodano lek do planu leków.');
 }
 
+
+function bindLibraryDrugButtons() {
+  document.querySelectorAll('[data-library-drug]').forEach((el) => {
+    el.onclick = () => {
+      state.libraryDrugName = el.dataset.libraryDrug || '';
+      refreshLibraryListOnly();
+      refreshLibraryCalculatorOnly();
+    };
+  });
+}
+
+function bindLibraryWeightInput() {
+  const libraryWeight = document.getElementById('libraryWeight');
+  if (!libraryWeight) return;
+  if (!state.libraryWeight && libraryWeight.value) state.libraryWeight = libraryWeight.value;
+  libraryWeight.oninput = (e) => {
+    state.libraryWeight = e.target.value;
+    const drug = getSelectedLibraryDrug();
+    const result = document.getElementById('libraryResult');
+    if (result && drug) result.textContent = getDrugMlResult(drug, state.libraryWeight);
+  };
+}
+
 function bind() {
   if (!state.unlocked) {
     const unlockBtn = document.getElementById('unlockBtn');
@@ -1906,18 +1989,15 @@ function bind() {
   if (librarySpecies) {
     librarySpecies.onchange = (e) => {
       state.librarySpecies = e.target.value;
+      const selected = getSelectedLibraryDrug();
+      if (!selected) state.libraryDrugName = '';
       refreshLibraryListOnly();
+      refreshLibraryCalculatorOnly();
     };
   }
 
-  const libraryWeight = document.getElementById('libraryWeight');
-  if (libraryWeight) {
-    if (!state.libraryWeight && libraryWeight.value) state.libraryWeight = libraryWeight.value;
-    libraryWeight.oninput = (e) => {
-      state.libraryWeight = e.target.value;
-      refreshLibraryListOnly();
-    };
-  }
+  bindLibraryDrugButtons();
+  bindLibraryWeightInput();
 
   const doseTabCalculator = document.getElementById('doseTabCalculator');
   if (doseTabCalculator) {
