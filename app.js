@@ -342,6 +342,68 @@ function calculateDoseValues(weight, preset) {
   return { totalMg, totalMl };
 }
 
+function formatDoseNumber(value, decimals = 2) {
+  const n = Number(value || 0);
+  if (!Number.isFinite(n)) return '0';
+  return n.toFixed(decimals).replace(/\.?0+$/, '');
+}
+
+function getDoseCalculation() {
+  const weight = Number(state.doseWeight || 0);
+  const mgKg = Number(state.doseMgKg || 0);
+  const mgMl = Number(state.doseMgMl || 0);
+  const mlPerKg = Number(state.doseMlPerKg || 0);
+  const warnings = [];
+  let totalMg = 0;
+  let totalMl = 0;
+  let method = 'Brak danych';
+  let formula = 'Wpisz masę ciała oraz dawkę.';
+
+  if (weight <= 0) warnings.push('Wpisz masę ciała pacjenta.');
+  if (mgKg > 0 && mlPerKg > 0) warnings.push('Uzupełniono jednocześnie mg/kg i ml/kg — kalkulator używa schematu ml/kg.');
+
+  if (weight > 0 && mlPerKg > 0) {
+    totalMl = weight * mlPerKg;
+    totalMg = mgMl > 0 ? totalMl * mgMl : 0;
+    method = 'Schemat objętościowy';
+    formula = `${formatDoseNumber(weight)} kg × ${formatDoseNumber(mlPerKg, 3)} ml/kg = ${formatDoseNumber(totalMl)} ml`;
+    if (mgMl > 0) formula += `; ${formatDoseNumber(totalMl)} ml × ${formatDoseNumber(mgMl)} mg/ml = ${formatDoseNumber(totalMg)} mg`;
+    else warnings.push('Brak stężenia mg/ml — pokazuję objętość, bez przeliczenia na mg.');
+  } else if (weight > 0 && mgKg > 0) {
+    totalMg = weight * mgKg;
+    totalMl = mgMl > 0 ? totalMg / mgMl : 0;
+    method = 'Dawka mg/kg';
+    formula = `${formatDoseNumber(weight)} kg × ${formatDoseNumber(mgKg, 3)} mg/kg = ${formatDoseNumber(totalMg)} mg`;
+    if (mgMl > 0) formula += `; ${formatDoseNumber(totalMg)} mg ÷ ${formatDoseNumber(mgMl)} mg/ml = ${formatDoseNumber(totalMl)} ml`;
+    else warnings.push('Brak stężenia mg/ml — pokazuję dawkę w mg, bez przeliczenia na ml.');
+  } else if (weight > 0) {
+    warnings.push('Uzupełnij dawkę mg/kg albo schemat ml/kg.');
+  }
+
+  return { weight, mgKg, mgMl, mlPerKg, totalMg, totalMl, method, formula, warnings, hasResult: totalMg > 0 || totalMl > 0 };
+}
+
+function clearDoseCalculator() {
+  state.doseDrugName = '';
+  state.doseMgKg = '';
+  state.doseMgMl = '';
+  state.doseMlPerKg = '';
+  state.dosePresetNote = '';
+  state.doseRoute = '';
+  state.doseMgKgChoice = '';
+  render();
+}
+
+function usePatientWeightInDoseCalculator() {
+  const weight = state.form.weight || '';
+  if (!weight) {
+    alert('W aktualnej karcie pacjenta nie ma wpisanej masy ciała.');
+    return;
+  }
+  state.doseWeight = weight;
+  render();
+}
+
 function buildProtocolPreview(protocol, species, weight) {
   if (!protocol || !species || !weight) return [];
 
@@ -659,27 +721,49 @@ function renderDoseOptionMarkup() {
 
 function renderDoseRouteMarkup() {
   const preset = getSelectedDrugPreset();
-  if (!preset) return '';
+  const routes = preset && Array.isArray(preset.routeOptions) ? preset.routeOptions : [];
 
-  const routes = Array.isArray(preset.routeOptions) ? preset.routeOptions : [];
-  if (!routes.length) return '';
+  if (!routes.length) {
+    return `
+    <div>
+      <label class="label">Droga podania</label>
+      <input id="doseRouteInput" value="${escapeHtml(state.doseRoute || '')}" placeholder="Np. IV, IM, SC, miejscowo">
+    </div>`;
+  }
 
   return `
     <div>
       <label class="label">Droga podania</label>
       <select id="doseRouteSelect">
-        ${routes
-          .map(
-            (route) => `
+        ${routes.map((route) => `
           <option value="${escapeHtml(route)}" ${route === state.doseRoute ? 'selected' : ''}>
             ${escapeHtml(route)}
           </option>
-        `
-          )
-          .join('')}
+        `).join('')}
       </select>
     </div>
   `;
+}
+
+function renderSelectedDrugInfoMarkup() {
+  const preset = getSelectedDrugPreset();
+  if (!preset) {
+    return `<div class="dose-help">Wpisz lek ręcznie albo wybierz z podpowiedzi. Przy leku ręcznym wpisz dawkę, stężenie i drogę podania samodzielnie.</div>`;
+  }
+
+  const doseText = preset.mlPerKg !== ''
+    ? `${preset.mlPerKg} ml/kg`
+    : preset.mgKg !== ''
+      ? `${preset.mgKg} mg/kg`
+      : Array.isArray(preset.mgKgOptions) && preset.mgKgOptions.length
+        ? preset.mgKgOptions.map((v) => `${v} mg/kg`).join(' / ')
+        : 'uzupełnij ręcznie';
+
+  return `
+    <div class="dose-help">
+      <strong>${escapeHtml(preset.name)}</strong> • ${escapeHtml(preset.species)} • ${escapeHtml(preset.category)}<br>
+      Dawka: ${escapeHtml(String(doseText))} • Stężenie: ${preset.mgMl !== '' ? escapeHtml(String(preset.mgMl)) + ' mg/ml' : 'brak'}
+    </div>`;
 }
 
 function renderProtocolCardsMarkup() {
@@ -757,29 +841,20 @@ function renderProtocolPreviewMarkup() {
 }
 
 function updateDoseCalculator() {
-  const weight = Number(state.doseWeight || 0);
-  const mgKg = Number(state.doseMgKg || 0);
-  const mgMl = Number(state.doseMgMl || 0);
-  const mlPerKg = Number(state.doseMlPerKg || 0);
-
-  let totalMg = 0;
-  let totalMl = 0;
-
-  if (weight > 0 && mlPerKg > 0) {
-    totalMl = weight * mlPerKg;
-    totalMg = mgMl > 0 ? totalMl * mgMl : 0;
-  } else if (weight > 0 && mgKg > 0) {
-    totalMg = weight * mgKg;
-    totalMl = mgMl > 0 ? totalMg / mgMl : 0;
-  }
-
+  const calc = getDoseCalculation();
   const mgBox = document.getElementById('doseTotalMg');
   const mlBox = document.getElementById('doseTotalMl');
   const noteBox = document.getElementById('dosePresetNote');
+  const methodBox = document.getElementById('doseMethod');
+  const formulaBox = document.getElementById('doseFormula');
+  const warningsBox = document.getElementById('doseWarnings');
 
-  if (mgBox) mgBox.textContent = `${totalMg.toFixed(2)} mg`;
-  if (mlBox) mlBox.textContent = `${totalMl.toFixed(2)} ml`;
+  if (mgBox) mgBox.textContent = `${calc.totalMg > 0 ? formatDoseNumber(calc.totalMg) : '0'} mg`;
+  if (mlBox) mlBox.textContent = `${calc.totalMl > 0 ? formatDoseNumber(calc.totalMl) : '0'} ml`;
   if (noteBox) noteBox.textContent = state.dosePresetNote || 'Brak dodatkowej uwagi.';
+  if (methodBox) methodBox.textContent = calc.method;
+  if (formulaBox) formulaBox.textContent = calc.formula;
+  if (warningsBox) warningsBox.innerHTML = calc.warnings.map((w) => `<div class="dose-warning">${escapeHtml(w)}</div>`).join('');
 }
 
 function render() {
@@ -869,7 +944,7 @@ function homeView() {
 
         <button class="menu-card menu-card-dose" data-nav="dawki">
           <div class="menu-icon">💉</div>
-          <div class="menu-title">2. Liczba dawek</div>
+          <div class="menu-title">2. Kalkulator dawek</div>
           <div class="menu-sub">Kalkulator dawek i gotowe protokoły</div>
         </button>
 
@@ -890,39 +965,24 @@ function homeView() {
 }
 
 function dosesView() {
-  const weight = Number(state.doseWeight || 0);
-  const mgKg = Number(state.doseMgKg || 0);
-  const mgMl = Number(state.doseMgMl || 0);
-  const mlPerKg = Number(state.doseMlPerKg || 0);
-
-  let totalMg = 0;
-  let totalMl = 0;
-
-  if (weight > 0 && mlPerKg > 0) {
-    totalMl = weight * mlPerKg;
-    totalMg = mgMl > 0 ? totalMl * mgMl : 0;
-  } else if (weight > 0 && mgKg > 0) {
-    totalMg = weight * mgKg;
-    totalMl = mgMl > 0 ? totalMg / mgMl : 0;
-  }
+  const calc = getDoseCalculation();
+  const patientWeight = state.form.weight || '';
 
   return `
     <div class="app">
       <div class="toolbar">
-        <button class="btn secondary" id="backHomeBtn">Powrot do menu</button>
+        <button class="btn secondary" id="backHomeBtn">Powrót do menu</button>
       </div>
 
       <div class="card">
         <div class="card-body">
-          <h3>Liczba dawek</h3>
+          <h3>Kalkulator dawek</h3>
+          <div class="small">Oblicz dawkę z mg/kg albo ze schematu ml/kg. Wynik możesz od razu dodać do planu leków.</div>
 
-          <div class="toolbar">
-            <button class="btn ${state.doseTab === 'calculator' ? 'primary-btn' : 'secondary'}" id="doseTabCalculator">
-              Kalkulator
-            </button>
-            <button class="btn ${state.doseTab === 'protocols' ? 'primary-btn' : 'secondary'}" id="doseTabProtocols">
-              Protokoły
-            </button>
+          <div class="toolbar dose-toolbar">
+            <button class="btn ${state.doseTab === 'calculator' ? 'primary-btn' : 'secondary'}" id="doseTabCalculator">Kalkulator</button>
+            <button class="btn ${state.doseTab === 'protocols' ? 'primary-btn' : 'secondary'}" id="doseTabProtocols">Protokoły</button>
+            <button class="btn secondary" id="clearDoseBtn" type="button">Wyczyść</button>
           </div>
 
           <div class="grid g2">
@@ -934,92 +994,61 @@ function dosesView() {
                 <option value="Kot" ${state.doseSpecies === 'Kot' ? 'selected' : ''}>Kot</option>
               </select>
             </div>
-
             <div>
               <label class="label">Masa ciała (kg)</label>
-              <input id="doseWeight" type="number" inputmode="decimal" step="0.01" value="${escapeHtml(state.doseWeight || '')}">
+              <div class="input-with-action">
+                <input id="doseWeight" type="number" inputmode="decimal" step="0.01" value="${escapeHtml(state.doseWeight || '')}">
+                <button class="btn secondary" id="usePatientWeightBtn" type="button" ${patientWeight ? '' : 'disabled'}>Z karty${patientWeight ? `: ${escapeHtml(patientWeight)} kg` : ''}</button>
+              </div>
             </div>
           </div>
 
           <div class="space-16"></div>
 
-          ${
-            state.doseTab === 'calculator'
-              ? `
+          ${state.doseTab === 'calculator' ? `
             <div class="grid g2">
               <div class="breed-field">
                 <label class="label">Nazwa leku</label>
                 <input id="doseDrugName" value="${escapeHtml(state.doseDrugName || '')}" placeholder="Np. ketamina" autocomplete="off">
                 ${renderDrugSuggestionsMarkup()}
               </div>
-
               ${renderDoseOptionMarkup()}
-
               <div>
                 <label class="label">Dawka (mg/kg)</label>
-                <input id="doseMgKg" type="number" inputmode="decimal" step="0.01" value="${escapeHtml(state.doseMgKg || '')}">
+                <input id="doseMgKg" type="number" inputmode="decimal" step="0.001" value="${escapeHtml(state.doseMgKg || '')}" placeholder="Np. 0.2">
               </div>
-
               <div>
                 <label class="label">Stężenie preparatu (mg/ml)</label>
-                <input id="doseMgMl" type="number" inputmode="decimal" step="0.01" value="${escapeHtml(state.doseMgMl || '')}">
+                <input id="doseMgMl" type="number" inputmode="decimal" step="0.001" value="${escapeHtml(state.doseMgMl || '')}" placeholder="Np. 10">
               </div>
-
               <div>
                 <label class="label">Schemat objętościowy (ml/kg)</label>
-                <input id="doseMlPerKg" type="number" inputmode="decimal" step="0.001" value="${escapeHtml(state.doseMlPerKg || '')}">
+                <input id="doseMlPerKg" type="number" inputmode="decimal" step="0.001" value="${escapeHtml(state.doseMlPerKg || '')}" placeholder="Np. 0.1">
               </div>
-
               ${renderDoseRouteMarkup()}
             </div>
-
+            <div class="space-12"></div>
+            ${renderSelectedDrugInfoMarkup()}
             <div class="space-16"></div>
-
             <div class="card inner-card">
               <div class="card-body">
                 <h3>Wynik</h3>
-
                 <div class="results-grid">
-                  <div class="result-box">
-                    <div class="result-label">Dawka całkowita</div>
-                    <div class="result-value" id="doseTotalMg">${totalMg.toFixed(2)} mg</div>
-                  </div>
-
-                  <div class="result-box">
-                    <div class="result-label">Objętość do podania</div>
-                    <div class="result-value" id="doseTotalMl">${totalMl.toFixed(2)} ml</div>
-                  </div>
+                  <div class="result-box"><div class="result-label">Dawka całkowita</div><div class="result-value" id="doseTotalMg">${calc.totalMg > 0 ? formatDoseNumber(calc.totalMg) : '0'} mg</div></div>
+                  <div class="result-box"><div class="result-label">Objętość do podania</div><div class="result-value" id="doseTotalMl">${calc.totalMl > 0 ? formatDoseNumber(calc.totalMl) : '0'} ml</div></div>
                 </div>
-
-                <div class="space-12"></div>
-
+                <div class="dose-summary"><div><strong>Tryb:</strong> <span id="doseMethod">${escapeHtml(calc.method)}</span></div><div id="doseFormula">${escapeHtml(calc.formula)}</div></div>
+                <div id="doseWarnings" class="dose-warnings">${calc.warnings.map((w) => `<div class="dose-warning">${escapeHtml(w)}</div>`).join('')}</div>
                 <div class="small" id="dosePresetNote">${escapeHtml(state.dosePresetNote || 'Brak dodatkowej uwagi.')}</div>
-
                 <div class="space-12"></div>
-
-                <button class="btn primary-btn full-btn" id="addDoseToPlanBtn">
-                  Dodaj wynik do planu leków
-                </button>
+                <button class="btn primary-btn full-btn" id="addDoseToPlanBtn">Dodaj wynik do planu leków</button>
               </div>
-            </div>
-          `
-              : `
-            <div class="card inner-card">
-              <div class="card-body">
-                <h3>Protokoły / kombinacje leków</h3>
-                <div class="small">Na start: gotowe kombinacje do premedykacji.</div>
-              </div>
-            </div>
-
+            </div>` : `
+            <div class="card inner-card"><div class="card-body"><h3>Protokoły / kombinacje leków</h3><div class="small">Na start: gotowe kombinacje do premedykacji.</div></div></div>
             <div class="space-16"></div>
-
             ${renderProtocolCardsMarkup()}
-
             <div class="space-16"></div>
-
-            ${renderProtocolPreviewMarkup()}
-          `
-          }
+            ${renderProtocolPreviewMarkup()}`}
         </div>
       </div>
     </div>
@@ -1628,62 +1657,28 @@ function refreshVitalsAlertsOnly() {
 }
 
 function addDoseToPlan() {
-  const weight = Number(state.doseWeight || 0);
-  const mgKg = Number(state.doseMgKg || 0);
-  const mgMl = Number(state.doseMgMl || 0);
-  const mlPerKg = Number(state.doseMlPerKg || 0);
   const drugName = (state.doseDrugName || '').trim();
   const preset = getSelectedDrugPreset();
+  const calc = getDoseCalculation();
 
-  if (!drugName) {
-    alert('Najpierw wpisz lub wybierz nazwę leku.');
-    return;
-  }
+  if (!drugName) { alert('Najpierw wpisz lub wybierz nazwę leku.'); return; }
+  if (calc.weight <= 0) { alert('Najpierw wpisz masę ciała.'); return; }
+  if (preset && Array.isArray(preset.mgKgOptions) && preset.mgKgOptions.length && !calc.mgKg) { alert('Najpierw wybierz dawkę mg/kg z listy.'); return; }
+  if (!calc.hasResult) { alert('Uzupełnij dawkę mg/kg albo schemat ml/kg.'); return; }
 
-  if (weight <= 0) {
-    alert('Najpierw wpisz masę ciała.');
-    return;
-  }
+  const doseParts = [];
+  if (calc.totalMg > 0) doseParts.push(`${formatDoseNumber(calc.totalMg)} mg`);
+  if (calc.totalMl > 0) doseParts.push(`${formatDoseNumber(calc.totalMl)} ml`);
 
-  if (preset && Array.isArray(preset.mgKgOptions) && preset.mgKgOptions.length && !mgKg) {
-    alert('Najpierw wybierz dawkę mg/kg z listy.');
-    return;
-  }
+  const details = [];
+  if (calc.mgKg > 0 && calc.mlPerKg <= 0) details.push(`${formatDoseNumber(calc.mgKg, 3)} mg/kg`);
+  if (calc.mlPerKg > 0) details.push(`${formatDoseNumber(calc.mlPerKg, 3)} ml/kg`);
+  if (calc.mgMl > 0) details.push(`${formatDoseNumber(calc.mgMl)} mg/ml`);
 
-  let totalMg = 0;
-  let totalMl = 0;
-
-  if (weight > 0 && mlPerKg > 0) {
-    totalMl = weight * mlPerKg;
-    totalMg = mgMl > 0 ? totalMl * mgMl : 0;
-  } else if (weight > 0 && mgKg > 0) {
-    totalMg = weight * mgKg;
-    totalMl = mgMl > 0 ? totalMg / mgMl : 0;
-  } else {
-    alert('Uzupełnij dawkę mg/kg albo schemat ml/kg.');
-    return;
-  }
-
-  const newRow = {
-    name: drugName,
-    dose: `${totalMg.toFixed(2)} mg / ${totalMl.toFixed(2)} ml`,
-    route: state.doseRoute || '',
-    notes: state.dosePresetNote || ''
-  };
-
-  const emptyRow = state.form.drugTable.find(
-    (row) => !row.name && !row.dose && !row.route && !row.notes
-  );
-
-  if (emptyRow) {
-    emptyRow.name = newRow.name;
-    emptyRow.dose = newRow.dose;
-    emptyRow.route = newRow.route;
-    emptyRow.notes = newRow.notes;
-  } else {
-    state.form.drugTable.push(newRow);
-  }
-
+  const newRow = { name: drugName, dose: doseParts.join(' / '), route: state.doseRoute || '', notes: [details.join(' • '), state.dosePresetNote || ''].filter(Boolean).join(' | ') };
+  const emptyRow = state.form.drugTable.find((row) => !row.name && !row.dose && !row.route && !row.notes);
+  if (emptyRow) { emptyRow.name = newRow.name; emptyRow.dose = newRow.dose; emptyRow.route = newRow.route; emptyRow.notes = newRow.notes; }
+  else { state.form.drugTable.push(newRow); }
   saveDraft();
   alert('Dodano lek do planu leków.');
 }
@@ -1801,6 +1796,13 @@ function bind() {
     };
   }
 
+
+  const usePatientWeightBtn = document.getElementById('usePatientWeightBtn');
+  if (usePatientWeightBtn) usePatientWeightBtn.onclick = () => usePatientWeightInDoseCalculator();
+
+  const clearDoseBtn = document.getElementById('clearDoseBtn');
+  if (clearDoseBtn) clearDoseBtn.onclick = () => clearDoseCalculator();
+
   const doseDrugName = document.getElementById('doseDrugName');
   if (doseDrugName) {
     doseDrugName.oninput = (e) => {
@@ -1831,6 +1833,10 @@ function bind() {
       state.doseRoute = e.target.value;
     };
   }
+
+
+  const doseRouteInput = document.getElementById('doseRouteInput');
+  if (doseRouteInput) doseRouteInput.oninput = (e) => { state.doseRoute = e.target.value; };
 
   const doseMgKg = document.getElementById('doseMgKg');
   if (doseMgKg) {

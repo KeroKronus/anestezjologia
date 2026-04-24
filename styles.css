@@ -736,6 +736,17 @@ textarea {
   }
 }
 
+
+.dose-toolbar { margin-top: 14px; }
+.input-with-action { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: stretch; }
+.input-with-action .btn { white-space: nowrap; padding-left: 12px; padding-right: 12px; }
+.input-with-action .btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+.dose-help { padding: 12px 14px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface-2); color: var(--muted); font-size: 13px; line-height: 1.45; }
+.dose-summary { margin-top: 12px; padding: 12px 14px; border-radius: 16px; background: var(--surface); border: 1px solid var(--border); color: var(--text); font-size: 13px; line-height: 1.5; }
+.dose-warnings { display: grid; gap: 8px; margin: 12px 0; }
+.dose-warning { padding: 10px 12px; border-radius: 14px; border: 1px solid rgba(217, 163, 0, 0.45); background: rgba(217, 163, 0, 0.1); color: var(--text); font-size: 13px; }
+@media (max-width: 640px) { .input-with-action { grid-template-columns: 1fr; } }
+
 @media print {
   body {
     background: #fff;
