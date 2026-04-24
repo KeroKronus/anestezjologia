@@ -146,7 +146,7 @@ const DRUG_PRESETS = [
   { name: 'Glikopirolat', species: 'Oba', category: 'Premedykacja', mgMl: 0.2, mgKg: 0.01, mgKgOptions: [], mlPerKg: '', route: 'IM', routeOptions: ['IM', 'IV'], note: 'Alternatywa dla atropiny.' },
   { name: 'Meloksykam', species: 'Oba', category: 'NLPZ', mgMl: 5, mgKg: 0.2, mgKgOptions: [], mlPerKg: '', route: 'SC', routeOptions: ['SC', 'IV'], note: 'Sprawdzić nawodnienie i nerki.' },
   { name: 'Metacam', species: 'Oba', category: 'NLPZ', mgMl: 20, mgKg: '', mgKgOptions: [], mlPerKg: 0.04, route: 'SC', routeOptions: ['SC', 'IV'], note: 'Schemat: 0.4 ml / 10 kg' },
-  { name: 'Biovetalgin', species: 'Oba', category: 'Analgezja', mgMl: 500, mgKg: '', mgKgOptions: [], mlPerKg: 0.1, route: 'IV', routeOptions: ['IV'], note: 'Schemat: 1 ml / 10 kg' },
+  { name: 'Biovetalgin', species: 'Oba', category: 'Analgezja', mgMl: 500, mgKg: '', mgKgOptions: [], mlPerKg: 0.1, route: 'SC', routeOptions: ['SC', 'IM'], note: 'Schemat: 1 ml / 10 kg' },
   { name: 'Biofazolin', species: 'Oba', category: 'Antybiotyk', mgMl: '', mgKg: '', mgKgOptions: [], mlPerKg: 0.2, route: 'IV', routeOptions: ['IV'], note: 'Schemat: 1 ml / 5 kg' },
   { name: 'Cefazolina', species: 'Oba', category: 'Antybiotyk', mgMl: 100, mgKg: 22, mgKgOptions: [], mlPerKg: '', route: 'IV', routeOptions: ['IV'], note: 'Często okołooperacyjnie.' },
   { name: 'Lidokaina', species: 'Pies', category: 'Miejscowe / CRI', mgMl: 20, mgKg: 2, mgKgOptions: [], mlPerKg: '', route: 'IV', routeOptions: ['IV', 'Miejscowo'], note: 'Do bolusa lub CRI według schematu.' },
