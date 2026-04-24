@@ -559,9 +559,13 @@ function getBreedSuggestions() {
   const options = getBreedOptions();
 
   if (!state.form.species) return [];
-  if (!breedValue) return options.slice(0, 8);
 
-  return options.filter((breed) => breed.toLowerCase().includes(breedValue)).slice(0, 8);
+  // 🔥 PRO: pokaż więcej na start, ale nie wszystko
+  if (!breedValue) return options.slice(0, 30);
+
+  return options.filter((breed) =>
+    breed.toLowerCase().includes(breedValue)
+  );
 }
 
 function renderBreedSuggestionsMarkup() {
