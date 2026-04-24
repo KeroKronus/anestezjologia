@@ -2,7 +2,6 @@ const APP_KEY = 'anestezjologia-techwet-v2';
 const PIN_KEY = 'anestezjologia-pin-v1';
 const DRAFT_KEY = 'anestezjologia-draft-v1';
 const THEME_KEY = 'anestezjologia-theme-v1';
-const CUSTOM_DRUGS_KEY = 'anestezjologia-custom-drugs-v1';
 
 const AUTHOR = 'Tech.Wet Woroch Marcin';
 const APP_NAME = 'Anestezjologia';
@@ -137,12 +136,11 @@ const DRUG_PRESETS = [
   { name: 'Midazolam', species: 'Oba', category: 'Premedykacja / Indukcja', mgMl: 5, mgKg: 0.2, mgKgOptions: [], mlPerKg: '', route: 'IV', routeOptions: ['IV', 'IM'], note: 'Benzodiazepina: może być stosowana w premedykacji i indukcji.' },
   { name: 'Butorfanol', species: 'Oba', category: 'Analgezja', mgMl: 10, mgKg: 0.2, mgKgOptions: [], mlPerKg: '', route: 'IM', routeOptions: ['IM', 'IV'], note: 'Dobra sedacja i analgezja trzewna.' },
   { name: 'Buprenorfina', species: 'Kot', category: 'Analgezja', mgMl: 0.3, mgKg: 0.02, mgKgOptions: [], mlPerKg: '', route: 'IM', routeOptions: ['IM', 'IV'], note: 'Często stosowana u kotów.' },
-  { name: 'Metadon', species: 'Pies', category: 'Analgezja / Premedykacja', mgMl: 10, mgKg: '', mgKgOptions: [], mlPerKg: 0.02, route: 'IM', routeOptions: ['IM', 'IV'], note: 'Premedykacja pies: 0.02 ml/kg.' },
-  { name: 'Metadon', species: 'Kot', category: 'Analgezja / Premedykacja', mgMl: 10, mgKg: '', mgKgOptions: [], mlPerKg: 0.02, route: 'IM', routeOptions: ['IM', 'IV'], note: 'Premedykacja kot: 0.1 ml / 5 kg.' },
+  { name: 'Metadon', species: 'Pies', category: 'Analgezja / Premedykacja', mgMl: 10, mgKg: 0.2, mgKgOptions: [], mlPerKg: '', route: 'IM', routeOptions: ['IM', 'IV'], note: 'Pies: 0.2 mg/kg. IM w premedykacji lub IV w analgezji.' },
+  { name: 'Metadon', species: 'Kot', category: 'Analgezja / Premedykacja', mgMl: 10, mgKg: 0.1, mgKgOptions: [], mlPerKg: '', route: 'IM', routeOptions: ['IM', 'IV'], note: 'Kot: 0.1 mg/kg. IM w premedykacji lub IV w analgezji.' },
   { name: 'Morfina', species: 'Pies', category: 'Analgezja', mgMl: 10, mgKg: 0.3, mgKgOptions: [], mlPerKg: '', route: 'IM', routeOptions: ['IM', 'IV'], note: 'Możliwa sedacja i wymioty.' },
   { name: 'Dexmedetomidyna', species: 'Oba', category: 'Premedykacja', mgMl: 0.5, mgKg: 0.005, mgKgOptions: [], mlPerKg: '', route: 'IM', routeOptions: ['IM', 'IV'], note: 'Małe dawki, ostrożnie u pacjentów ryzyka.' },
-  { name: 'Medetomidyna', species: 'Pies', category: 'Premedykacja', mgMl: 1, mgKg: '', mgKgOptions: [], mlPerKg: 0.01, route: 'IM', routeOptions: ['IM', 'IV'], note: 'Premedykacja pies: 0.01 ml/kg.' },
-  { name: 'Medetomidyna', species: 'Kot', category: 'Premedykacja', mgMl: 1, mgKg: '', mgKgOptions: [], mlPerKg: 0.04, route: 'IM', routeOptions: ['IM', 'IV'], note: 'Premedykacja kot: 0.2 ml / 5 kg.' },
+  { name: 'Medetomidyna', species: 'Oba', category: 'Premedykacja', mgMl: 1, mgKg: 0.02, mgKgOptions: [], mlPerKg: '', route: 'IM', routeOptions: ['IM', 'IV'], note: 'Sedacja i analgezja.' },
   { name: 'Acepromazyna', species: 'Pies', category: 'Premedykacja', mgMl: 2, mgKg: 0.02, mgKgOptions: [], mlPerKg: '', route: 'IM', routeOptions: ['IM', 'IV'], note: 'Ostrożnie przy hipotensji.' },
   { name: 'Atropina', species: 'Oba', category: 'Premedykacja', mgMl: 0.5, mgKg: 0.02, mgKgOptions: [], mlPerKg: '', route: 'SC', routeOptions: ['SC', 'IM', 'IV'], note: 'Według wskazań klinicznych.' },
   { name: 'Glikopirolat', species: 'Oba', category: 'Premedykacja', mgMl: 0.2, mgKg: 0.01, mgKgOptions: [], mlPerKg: '', route: 'IM', routeOptions: ['IM', 'IV'], note: 'Alternatywa dla atropiny.' },
@@ -153,11 +151,25 @@ const DRUG_PRESETS = [
   { name: 'Cefazolina', species: 'Oba', category: 'Antybiotyk', mgMl: 100, mgKg: 22, mgKgOptions: [], mlPerKg: '', route: 'IV', routeOptions: ['IV'], note: 'Często okołooperacyjnie.' },
   { name: 'Lidokaina', species: 'Pies', category: 'Miejscowe / CRI', mgMl: 20, mgKg: 2, mgKgOptions: [], mlPerKg: '', route: 'IV', routeOptions: ['IV', 'Miejscowo'], note: 'Do bolusa lub CRI według schematu.' },
   { name: 'Bupiwakaina', species: 'Oba', category: 'Miejscowe', mgMl: 5, mgKg: 2, mgKgOptions: [], mlPerKg: '', route: 'Miejscowo', routeOptions: ['Miejscowo'], note: 'Blokady miejscowe.' },
-  { name: 'Maropitant', species: 'Oba', category: 'Przeciwwymiotny', mgMl: 10, mgKg: 1, mgKgOptions: [], mlPerKg: '', route: 'SC', routeOptions: ['SC'], note: 'Przedmedykacja u pacjentów z ryzykiem wymiotów.' }
+  { name: 'Maropitant', species: 'Oba', category: 'Przeciwwymiotny', mgMl: 10, mgKg: 1, mgKgOptions: [], mlPerKg: '', route: 'SC', routeOptions: ['SC'], note: 'Przedmedykacja u pacjentów z ryzykiem wymiotów.' },
+  { name: 'Synulox', species: 'Oba', category: 'Antybiotyk', substance: 'amoksycylina + kwas klawulanowy', mgMl: '', mgKg: '', mgKgOptions: [], mlPerKg: 0.1, doseRangeMlPerKg: [0.05, 0.1], route: 'SC', routeOptions: ['SC', 'IM'], note: 'Antybiotyk: zakres 1 ml / 20 kg do 1 ml / 10 kg. Podanie SC/IM.' },
+  { name: 'Enroxil', species: 'Oba', category: 'Antybiotyk', substance: 'enrofloksacyna', mgMl: '', mgKg: '', mgKgOptions: [], mlPerKg: 0.1, route: 'SC', routeOptions: ['SC'], note: 'Antybiotyk: 1 ml / 10 kg. Wszystkie gatunki. Podanie SC.' },
+  { name: 'Tolfine', species: 'Oba', category: 'NLPZ / przeciwbólowy', substance: 'kwas tolfenamowy', mgMl: '', mgKg: '', mgKgOptions: [], mlPerKg: 0.1, route: 'SC', routeOptions: ['SC'], note: 'NLPZ: 1 ml / 10 kg. Podanie SC.' },
+  { name: 'Prevomax (maropitant)', species: 'Oba', category: 'Przeciwwymiotny', substance: 'maropitant', mgMl: '', mgKg: '', mgKgOptions: [], mlPerKg: 0.1, route: 'SC', routeOptions: ['SC'], note: 'Przeciwwymiotny: 1 ml / 10 kg. Podanie SC.' },
+  { name: 'Dexafast', species: 'Oba', category: 'Steryd / przeciwzapalny', substance: 'deksametazon', mgMl: '', mgKg: '', mgKgOptions: [], mlPerKg: 0.05, route: 'SC', routeOptions: ['SC', 'IM'], note: 'Steryd: 0.5 ml / 10 kg. Podanie SC/IM.' },
+  { name: 'Lincospectin', species: 'Oba', category: 'Antybiotyk', substance: 'linkomycyna + spektinomycyna', mgMl: '', mgKg: '', mgKgOptions: [], mlPerKg: 0.2, route: 'SC', routeOptions: ['SC'], note: 'Antybiotyk: 1 ml / 5 kg. Podanie SC.' },
+  { name: 'Clamoxyl', species: 'Oba', category: 'Antybiotyk', substance: 'amoksycylina', mgMl: '', mgKg: '', mgKgOptions: [], mlPerKg: 0.1, route: 'SC', routeOptions: ['SC'], note: 'Antybiotyk: 1 ml / 10 kg. Podanie SC.' },
+  { name: 'Catosal', species: 'Oba', category: 'Wspomagający / metaboliczny', substance: 'butafosfan + cyjanokobalamina', mgMl: '', mgKg: '', mgKgOptions: [], mlPerKg: 0.1, route: 'SC', routeOptions: ['SC'], note: 'Preparat wspomagający: 1 ml / 10 kg. Podanie SC.' },
+  { name: 'Marfloxin', species: 'Pies', category: 'Antybiotyk', substance: 'marbofloksacyna', mgMl: '', mgKg: 2, mgKgOptions: [], mlPerKg: 0.1, route: 'SC', routeOptions: ['SC'], note: 'Pies: 2 mg/kg, praktycznie 1 ml / 10 kg. Podanie SC.' },
+  { name: 'Marfloxin', species: 'Kot', category: 'Antybiotyk', substance: 'marbofloksacyna', mgMl: '', mgKg: 2, mgKgOptions: [], mlPerKg: 0.1, route: 'SC', routeOptions: ['SC'], note: 'Kot: 2 mg/kg, praktycznie 0.5 ml / 5 kg. Podanie SC.' },
+  { name: 'Vecort', species: 'Oba', category: 'Steryd / przeciwzapalny', substance: 'kortykosteroid', mgMl: '', mgKg: '', mgKgOptions: [], mlPerKg: 0.05, route: 'SC', routeOptions: ['SC'], note: 'Steryd: 0.5 ml / 10 kg. Podanie SC.' },
+  { name: 'Furosemid 5%', species: 'Oba', category: 'Diuretyk', substance: 'furosemid', mgMl: '', mgKg: '', mgKgOptions: [], mlPerKg: 0.1, route: 'SC', routeOptions: ['SC', 'IV'], note: 'Diuretyk: 1 ml / 10 kg. Podanie SC/IV.' }
 ];
 
 const PROTOCOL_PRESETS = [
-  { id: 'medetomidine-methadone-surgery', name: 'Medetomidyna + Metadon', short: 'Zabieg chirurgiczny', description: 'Protokół chirurgiczny dla psa i kota według dawek objętościowych ustawionych w kalkulatorze.', species: 'Oba', drugs: [{ name: 'Medetomidyna', route: 'IM' }, { name: 'Metadon', route: 'IM' }] }
+  { id: 'medetomidine-methadone-im', name: 'Medetomidyna + Metadon IM', short: 'Alfa2-agonista + opioid', description: 'Premedykacja domięśniowa: medetomidyna + metadon.', species: 'Oba', target: 'Premedykacja', drugs: [{ name: 'Medetomidyna', route: 'IM' }, { name: 'Metadon', route: 'IM' }] },
+  { id: 'methadone-midazolam', name: 'Metadon + Midazolam', short: 'Opioid + benzodiazepina', description: 'Premedykacja / pacjent bólowy.', species: 'Oba', target: 'Premedykacja', drugs: [{ name: 'Metadon', route: 'IM' }, { name: 'Midazolam', route: 'IV' }] },
+  { id: 'butorphanol-midazolam', name: 'Butorfanol + Midazolam', short: 'Badanie diagnostyczne', description: 'Spokojniejsze badanie diagnostyczne.', species: 'Oba', target: 'Premedykacja', drugs: [{ name: 'Butorfanol', route: 'IM' }, { name: 'Midazolam', route: 'IM' }] }
 ];
 
 const vitalsTemplate = () =>
@@ -235,7 +247,6 @@ let state = {
   doseTab: 'calculator',
   selectedProtocolId: '',
   doseSpecies: '',
-  dosePurpose: 'Premedykacja',
   doseWeight: '',
   doseDrugName: '',
   doseMgKg: '',
@@ -245,7 +256,8 @@ let state = {
   doseRoute: '',
   doseMgKgChoice: '',
   librarySearch: '',
-  lastVitalsReminderAt: 0
+  librarySpecies: '',
+  libraryWeight: ''
 };
 
 function loadRecords() {
@@ -292,68 +304,6 @@ function saveTheme(theme) {
   localStorage.setItem(THEME_KEY, theme);
 }
 
-function loadCustomDrugs() {
-  try {
-    return JSON.parse(localStorage.getItem(CUSTOM_DRUGS_KEY) || '[]');
-  } catch {
-    return [];
-  }
-}
-
-function saveCustomDrugs(drugs) {
-  localStorage.setItem(CUSTOM_DRUGS_KEY, JSON.stringify(drugs));
-}
-
-function getAllDrugPresets() {
-  return [...DRUG_PRESETS, ...loadCustomDrugs()];
-}
-
-function addCustomDrugFromLibrary() {
-  const name = (document.getElementById('libraryDrugName')?.value || '').trim();
-  const species = document.getElementById('libraryDrugSpecies')?.value || 'Oba';
-  const category = document.getElementById('libraryDrugCategory')?.value || 'Premedykacja';
-  const mgMl = document.getElementById('libraryDrugMgMl')?.value || '';
-  const mgKg = document.getElementById('libraryDrugMgKg')?.value || '';
-  const mlPerKg = document.getElementById('libraryDrugMlPerKg')?.value || '';
-  const route = (document.getElementById('libraryDrugRoute')?.value || '').trim();
-  const note = (document.getElementById('libraryDrugNote')?.value || '').trim();
-
-  if (!name) {
-    alert('Wpisz nazwę leku.');
-    return;
-  }
-
-  const drugs = loadCustomDrugs();
-  drugs.push({
-    name,
-    species,
-    category,
-    mgMl: mgMl === '' ? '' : Number(mgMl),
-    mgKg: mgKg === '' ? '' : Number(mgKg),
-    mgKgOptions: [],
-    mlPerKg: mlPerKg === '' ? '' : Number(mlPerKg),
-    route,
-    routeOptions: route ? [route] : [],
-    note: note || 'Lek dodany w bibliotece.'
-  });
-  saveCustomDrugs(drugs);
-  alert('Dodano lek do biblioteki.');
-  render();
-}
-
-function useLibraryDrug(name, species) {
-  const preset =
-    getAllDrugPresets().find((drug) => drug.name === name && drug.species === species) ||
-    getAllDrugPresets().find((drug) => drug.name === name);
-
-  if (!preset) return;
-
-  state.doseTab = 'calculator';
-  state.doseSpecies = preset.species === 'Oba' ? state.doseSpecies : preset.species;
-  applyPresetToDoseFields(preset);
-  render();
-}
-
 function applyTheme() {
   document.body.setAttribute('data-theme', state.theme);
 }
@@ -367,50 +317,20 @@ if (!loadDraft() && state.records[0]) {
   state.form = JSON.parse(JSON.stringify(state.records[0].data));
 }
 
-
-function getDosePurposeLabel() {
-  return state.dosePurpose || 'Wszystkie';
-}
-
-function drugMatchesDosePurpose(drug, purpose = state.dosePurpose) {
-  if (!purpose || purpose === 'Wszystkie') return true;
-  const category = (drug.category || '').toLowerCase();
-  const target = purpose.toLowerCase();
-
-  if (category.includes(target)) return true;
-
-  if (purpose === 'Analgezja') {
-    return ['nlpz', 'miejscowe', 'cri'].some((word) => category.includes(word));
-  }
-
-  return false;
-}
-
-function getFilteredDosePresets() {
-  const species = state.doseSpecies || '';
-  return getAllDrugPresets().filter((drug) => {
-    const speciesOk = !species || drug.species === 'Oba' || drug.species === species;
-    return speciesOk && drugMatchesDosePurpose(drug);
-  });
-}
-
 function getPresetByNameAndSpecies(name, species) {
   if (!name) return null;
 
-  const exact = getAllDrugPresets().find(
+  const exact = DRUG_PRESETS.find(
     (drug) => drug.name === name && (drug.species === 'Oba' || drug.species === species)
   );
 
   if (exact) return exact;
 
-  return getAllDrugPresets().find((drug) => drug.name === name) || null;
+  return DRUG_PRESETS.find((drug) => drug.name === name) || null;
 }
 
 function getSelectedDrugPreset() {
-  const name = state.doseDrugName;
-  if (!name) return null;
-  const fromCurrentGroup = getFilteredDosePresets().find((drug) => drug.name === name);
-  return fromCurrentGroup || getPresetByNameAndSpecies(name, state.doseSpecies || '');
+  return getPresetByNameAndSpecies(state.doseDrugName, state.doseSpecies || '');
 }
 
 function getSelectedProtocol() {
@@ -435,68 +355,6 @@ function calculateDoseValues(weight, preset) {
   }
 
   return { totalMg, totalMl };
-}
-
-function formatDoseNumber(value, decimals = 2) {
-  const n = Number(value || 0);
-  if (!Number.isFinite(n)) return '0';
-  return n.toFixed(decimals).replace(/\.?0+$/, '');
-}
-
-function getDoseCalculation() {
-  const weight = Number(state.doseWeight || 0);
-  const mgKg = Number(state.doseMgKg || 0);
-  const mgMl = Number(state.doseMgMl || 0);
-  const mlPerKg = Number(state.doseMlPerKg || 0);
-  const warnings = [];
-  let totalMg = 0;
-  let totalMl = 0;
-  let method = 'Brak danych';
-  let formula = 'Wpisz masę ciała oraz dawkę.';
-
-  if (weight <= 0) warnings.push('Wpisz masę ciała pacjenta.');
-  if (mgKg > 0 && mlPerKg > 0) warnings.push('Uzupełniono jednocześnie mg/kg i ml/kg — kalkulator używa schematu ml/kg.');
-
-  if (weight > 0 && mlPerKg > 0) {
-    totalMl = weight * mlPerKg;
-    totalMg = mgMl > 0 ? totalMl * mgMl : 0;
-    method = 'Schemat objętościowy';
-    formula = `${formatDoseNumber(weight)} kg × ${formatDoseNumber(mlPerKg, 3)} ml/kg = ${formatDoseNumber(totalMl)} ml`;
-    if (mgMl > 0) formula += `; ${formatDoseNumber(totalMl)} ml × ${formatDoseNumber(mgMl)} mg/ml = ${formatDoseNumber(totalMg)} mg`;
-    else warnings.push('Brak stężenia mg/ml — pokazuję objętość, bez przeliczenia na mg.');
-  } else if (weight > 0 && mgKg > 0) {
-    totalMg = weight * mgKg;
-    totalMl = mgMl > 0 ? totalMg / mgMl : 0;
-    method = 'Dawka mg/kg';
-    formula = `${formatDoseNumber(weight)} kg × ${formatDoseNumber(mgKg, 3)} mg/kg = ${formatDoseNumber(totalMg)} mg`;
-    if (mgMl > 0) formula += `; ${formatDoseNumber(totalMg)} mg ÷ ${formatDoseNumber(mgMl)} mg/ml = ${formatDoseNumber(totalMl)} ml`;
-    else warnings.push('Brak stężenia mg/ml — pokazuję dawkę w mg, bez przeliczenia na ml.');
-  } else if (weight > 0) {
-    warnings.push('Uzupełnij dawkę mg/kg albo schemat ml/kg.');
-  }
-
-  return { weight, mgKg, mgMl, mlPerKg, totalMg, totalMl, method, formula, warnings, hasResult: totalMg > 0 || totalMl > 0 };
-}
-
-function clearDoseCalculator() {
-  state.doseDrugName = '';
-  state.doseMgKg = '';
-  state.doseMgMl = '';
-  state.doseMlPerKg = '';
-  state.dosePresetNote = '';
-  state.doseRoute = '';
-  state.doseMgKgChoice = '';
-  render();
-}
-
-function usePatientWeightInDoseCalculator() {
-  const weight = state.form.weight || '';
-  if (!weight) {
-    alert('W aktualnej karcie pacjenta nie ma wpisanej masy ciała.');
-    return;
-  }
-  state.doseWeight = weight;
-  render();
 }
 
 function buildProtocolPreview(protocol, species, weight) {
@@ -671,7 +529,7 @@ function getDrugSuggestions() {
   const value = (state.doseDrugName || '').trim().toLowerCase();
   const species = state.doseSpecies || '';
 
-  let filtered = getFilteredDosePresets();
+  let filtered = DRUG_PRESETS;
 
   if (species) {
     filtered = filtered.filter((drug) => drug.species === 'Oba' || drug.species === species);
@@ -693,7 +551,7 @@ function getDrugSuggestions() {
   }
 
   const found = filtered.filter((drug) =>
-    [drug.name, drug.category, drug.species, drug.note].join(' ').toLowerCase().includes(value)
+    [drug.name, drug.category, drug.species, drug.substance || '', drug.note].join(' ').toLowerCase().includes(value)
   );
 
   const unique = [];
@@ -816,24 +674,10 @@ function renderDoseOptionMarkup() {
 
 function renderDoseRouteMarkup() {
   const preset = getSelectedDrugPreset();
-
-  if (!preset) {
-    return `
-    <div>
-      <label class="label">Droga podania</label>
-      <input id="doseRouteInput" value="${escapeHtml(state.doseRoute || '')}" placeholder="Np. IV, IM, SC, miejscowo">
-    </div>`;
-  }
+  if (!preset) return '';
 
   const routes = Array.isArray(preset.routeOptions) ? preset.routeOptions : [];
-
-  if (!routes.length) {
-    return `
-    <div>
-      <label class="label">Droga podania</label>
-      <input id="doseRouteInput" value="${escapeHtml(state.doseRoute || '')}" placeholder="Np. IV, IM, SC, miejscowo">
-    </div>`;
-  }
+  if (!routes.length) return '';
 
   return `
     <div>
@@ -851,29 +695,6 @@ function renderDoseRouteMarkup() {
       </select>
     </div>
   `;
-}
-
-
-function renderSelectedDrugInfoMarkup() {
-  const preset = getSelectedDrugPreset();
-  if (!preset) {
-    return `<div class="small">Wpisz lek ręcznie albo wybierz z podpowiedzi. Przy leku ręcznym wpisz dawkę, stężenie i drogę podania samodzielnie.</div>`;
-  }
-
-  const doseText = preset.mlPerKg !== ''
-    ? `${preset.mlPerKg} ml/kg`
-    : preset.mgKg !== ''
-      ? `${preset.mgKg} mg/kg`
-      : Array.isArray(preset.mgKgOptions) && preset.mgKgOptions.length
-        ? preset.mgKgOptions.map((v) => `${v} mg/kg`).join(' / ')
-        : 'uzupełnij ręcznie';
-
-  return `
-    <div class="small">
-      <strong>${escapeHtml(preset.name)}</strong> • ${escapeHtml(preset.species)} • ${escapeHtml(preset.category)}<br>
-      Dawka: ${escapeHtml(String(doseText))} • Stężenie: ${preset.mgMl !== '' ? escapeHtml(String(preset.mgMl)) + ' mg/ml' : 'brak'}<br>
-      ${escapeHtml(preset.note || '')}
-    </div>`;
 }
 
 function renderProtocolCardsMarkup() {
@@ -951,22 +772,29 @@ function renderProtocolPreviewMarkup() {
 }
 
 function updateDoseCalculator() {
-  const calc = getDoseCalculation();
+  const weight = Number(state.doseWeight || 0);
+  const mgKg = Number(state.doseMgKg || 0);
+  const mgMl = Number(state.doseMgMl || 0);
+  const mlPerKg = Number(state.doseMlPerKg || 0);
+
+  let totalMg = 0;
+  let totalMl = 0;
+
+  if (weight > 0 && mlPerKg > 0) {
+    totalMl = weight * mlPerKg;
+    totalMg = mgMl > 0 ? totalMl * mgMl : 0;
+  } else if (weight > 0 && mgKg > 0) {
+    totalMg = weight * mgKg;
+    totalMl = mgMl > 0 ? totalMg / mgMl : 0;
+  }
+
   const mgBox = document.getElementById('doseTotalMg');
   const mlBox = document.getElementById('doseTotalMl');
   const noteBox = document.getElementById('dosePresetNote');
-  const formulaBox = document.getElementById('doseFormula');
-  const warningsBox = document.getElementById('doseWarnings');
 
-  if (mgBox) mgBox.textContent = `${formatDoseNumber(calc.totalMg)} mg`;
-  if (mlBox) mlBox.textContent = `${formatDoseNumber(calc.totalMl)} ml`;
+  if (mgBox) mgBox.textContent = `${totalMg.toFixed(2)} mg`;
+  if (mlBox) mlBox.textContent = `${totalMl.toFixed(2)} ml`;
   if (noteBox) noteBox.textContent = state.dosePresetNote || 'Brak dodatkowej uwagi.';
-  if (formulaBox) formulaBox.textContent = calc.formula;
-  if (warningsBox) {
-    warningsBox.innerHTML = calc.warnings.length
-      ? calc.warnings.map((warning) => `<div class="vitals-alert-item warning-text">${escapeHtml(warning)}</div>`).join('')
-      : '<div class="small">Brak ostrzeżeń.</div>';
-  }
 }
 
 function render() {
@@ -988,6 +816,8 @@ function render() {
       app.innerHTML = mainView();
     } else if (state.currentPage === 'dawki') {
       app.innerHTML = dosesView();
+    } else if (state.currentPage === 'biblioteka') {
+      app.innerHTML = libraryView();
     } else if (state.currentPage === 'ustawienia') {
       app.innerHTML = settingsView();
     } else if (state.currentPage === 'podziekowania') {
@@ -1057,18 +887,24 @@ function homeView() {
         <button class="menu-card menu-card-dose" data-nav="dawki">
           <div class="menu-icon">💉</div>
           <div class="menu-title">2. Kalkulator zabiegowy</div>
-          <div class="menu-sub">Premedykacja, indukcja, analgezja, protokoły i biblioteka leków</div>
+          <div class="menu-sub">Dawki, premedykacja i gotowe protokoły</div>
+        </button>
+
+        <button class="menu-card menu-card-library" data-nav="biblioteka">
+          <div class="menu-icon">📚</div>
+          <div class="menu-title">3. Biblioteka leków</div>
+          <div class="menu-sub">Baza leków z szybkim przeliczeniem dawki</div>
         </button>
 
         <button class="menu-card menu-card-settings" data-nav="ustawienia">
           <div class="menu-icon">⚙️</div>
-          <div class="menu-title">3. Ustawienia</div>
+          <div class="menu-title">4. Ustawienia</div>
           <div class="menu-sub">PIN aplikacji, motyw i przyszłe opcje personalizacji</div>
         </button>
 
         <button class="menu-card menu-card-thanks" data-nav="podziekowania">
           <div class="menu-icon">🙏</div>
-          <div class="menu-title">4. Szczególne podziękowania</div>
+          <div class="menu-title">5. Szczególne podziękowania</div>
           <div class="menu-sub">Autor aplikacji i podziękowania</div>
         </button>
       </div>
@@ -1076,162 +912,67 @@ function homeView() {
   `;
 }
 
-
-function renderDrugLibraryMarkup() {
-  const q = (state.librarySearch || '').trim().toLowerCase();
-  const all = getAllDrugPresets().filter((drug) => {
-    if (!q) return true;
-    return [drug.name, drug.species, drug.category, drug.note, drug.route].join(' ').toLowerCase().includes(q);
-  });
-
-  return `
-    <div class="card inner-card">
-      <div class="card-body">
-        <h3>Biblioteka leków</h3>
-        <div class="small">Tu dodasz własne preparaty i użyjesz ich potem w kalkulatorze zabiegowym.</div>
-
-        <div class="space-12"></div>
-
-        <input id="librarySearch" placeholder="Szukaj leku..." value="${escapeHtml(state.librarySearch || '')}">
-
-        <div class="space-16"></div>
-
-        <div class="grid g2">
-          <div>
-            <label class="label">Nazwa leku</label>
-            <input id="libraryDrugName" placeholder="Np. Ketamina">
-          </div>
-          <div>
-            <label class="label">Gatunek</label>
-            <select id="libraryDrugSpecies">
-              <option value="Oba">Oba</option>
-              <option value="Pies">Pies</option>
-              <option value="Kot">Kot</option>
-            </select>
-          </div>
-          <div>
-            <label class="label">Grupa</label>
-            <select id="libraryDrugCategory">
-              <option>Premedykacja</option>
-              <option>Indukcja</option>
-              <option>Analgezja</option>
-              <option>Antybiotyk</option>
-              <option>NLPZ</option>
-              <option>Miejscowe / CRI</option>
-            </select>
-          </div>
-          <div>
-            <label class="label">Droga podania</label>
-            <input id="libraryDrugRoute" placeholder="Np. IM, IV, SC">
-          </div>
-          <div>
-            <label class="label">Stężenie (mg/ml)</label>
-            <input id="libraryDrugMgMl" type="number" inputmode="decimal" step="0.001">
-          </div>
-          <div>
-            <label class="label">Dawka (mg/kg)</label>
-            <input id="libraryDrugMgKg" type="number" inputmode="decimal" step="0.001">
-          </div>
-          <div>
-            <label class="label">Schemat objętościowy (ml/kg)</label>
-            <input id="libraryDrugMlPerKg" type="number" inputmode="decimal" step="0.001">
-          </div>
-          <div>
-            <label class="label">Uwagi</label>
-            <input id="libraryDrugNote" placeholder="Np. podawać powoli">
-          </div>
-        </div>
-
-        <div class="space-12"></div>
-        <button class="btn primary-btn full-btn" id="addLibraryDrugBtn">Dodaj lek do biblioteki</button>
-      </div>
-    </div>
-
-    <div class="space-16"></div>
-
-    <div class="card inner-card">
-      <div class="card-body">
-        <h3>Lista leków</h3>
-        <div class="menu-grid">
-          ${all.map((drug) => `
-            <button type="button" class="menu-card" data-library-use="${escapeHtml(drug.name)}" data-library-species="${escapeHtml(drug.species)}">
-              <div class="menu-title">${escapeHtml(drug.name)}</div>
-              <div class="menu-sub">${escapeHtml(drug.species)} • ${escapeHtml(drug.category)} • ${escapeHtml(drug.route || '')}</div>
-              <div class="small" style="margin-top:8px;">
-                ${drug.mlPerKg !== '' ? escapeHtml(String(drug.mlPerKg)) + ' ml/kg' : drug.mgKg !== '' ? escapeHtml(String(drug.mgKg)) + ' mg/kg' : 'dawka ręczna'}
-                ${drug.mgMl !== '' ? ' • ' + escapeHtml(String(drug.mgMl)) + ' mg/ml' : ''}
-              </div>
-              <div class="small" style="margin-top:6px;">Kliknij, aby użyć w kalkulatorze.</div>
-            </button>
-          `).join('')}
-        </div>
-      </div>
-    </div>
-  `;
-}
-
 function dosesView() {
-  const calc = getDoseCalculation();
-  const patientWeight = state.form.weight || '';
+  const weight = Number(state.doseWeight || 0);
+  const mgKg = Number(state.doseMgKg || 0);
+  const mgMl = Number(state.doseMgMl || 0);
+  const mlPerKg = Number(state.doseMlPerKg || 0);
+
+  let totalMg = 0;
+  let totalMl = 0;
+
+  if (weight > 0 && mlPerKg > 0) {
+    totalMl = weight * mlPerKg;
+    totalMg = mgMl > 0 ? totalMl * mgMl : 0;
+  } else if (weight > 0 && mgKg > 0) {
+    totalMg = weight * mgKg;
+    totalMl = mgMl > 0 ? totalMg / mgMl : 0;
+  }
 
   return `
     <div class="app">
       <div class="toolbar">
-        <button class="btn secondary" id="backHomeBtn">Powrót do menu</button>
+        <button class="btn secondary" id="backHomeBtn">Powrot do menu</button>
       </div>
 
       <div class="card">
         <div class="card-body">
-          <h3>Kalkulator zabiegowy</h3>
-          <div class="small">Oblicz dawkę, wybierz etap zabiegu albo skorzystaj z biblioteki leków.</div>
+          <h3>Liczba dawek</h3>
 
-          <div class="toolbar dose-toolbar">
-            <button class="btn ${state.doseTab === 'calculator' ? 'primary-btn' : 'secondary'}" id="doseTabCalculator">Kalkulator</button>
-            <button class="btn ${state.doseTab === 'protocols' ? 'primary-btn' : 'secondary'}" id="doseTabProtocols">Protokoły</button>
-            <button class="btn ${state.doseTab === 'library' ? 'primary-btn' : 'secondary'}" id="doseTabLibrary">Biblioteka leków</button>
-            <button class="btn secondary" id="clearDoseBtn" type="button">Wyczyść</button>
+          <div class="toolbar">
+            <button class="btn ${state.doseTab === 'calculator' ? 'primary-btn' : 'secondary'}" id="doseTabCalculator">
+              Kalkulator
+            </button>
+            <button class="btn ${state.doseTab === 'protocols' ? 'primary-btn' : 'secondary'}" id="doseTabProtocols">
+              Protokoły
+            </button>
           </div>
 
-          ${state.doseTab !== 'library' ? `
-            <div class="grid g2">
-              <div>
-                <label class="label">Gatunek</label>
-                <select id="doseSpecies">
-                  <option value="">Wybierz</option>
-                  <option value="Pies" ${state.doseSpecies === 'Pies' ? 'selected' : ''}>Pies</option>
-                  <option value="Kot" ${state.doseSpecies === 'Kot' ? 'selected' : ''}>Kot</option>
-                </select>
-              </div>
-
-              <div>
-                <label class="label">Masa ciała (kg)</label>
-                <div class="input-with-button">
-                  <input id="doseWeight" type="number" inputmode="decimal" step="0.01" value="${escapeHtml(state.doseWeight || '')}">
-                  <button class="btn secondary" id="usePatientWeightBtn" type="button" ${patientWeight ? '' : 'disabled'}>Z karty</button>
-                </div>
-              </div>
+          <div class="grid g2">
+            <div>
+              <label class="label">Gatunek</label>
+              <select id="doseSpecies">
+                <option value="">Wybierz</option>
+                <option value="Pies" ${state.doseSpecies === 'Pies' ? 'selected' : ''}>Pies</option>
+                <option value="Kot" ${state.doseSpecies === 'Kot' ? 'selected' : ''}>Kot</option>
+              </select>
             </div>
 
-            <div class="space-16"></div>
-          ` : ''}
+            <div>
+              <label class="label">Masa ciała (kg)</label>
+              <input id="doseWeight" type="number" inputmode="decimal" step="0.01" value="${escapeHtml(state.doseWeight || '')}">
+            </div>
+          </div>
+
+          <div class="space-16"></div>
 
           ${
             state.doseTab === 'calculator'
               ? `
             <div class="grid g2">
-              <div>
-                <label class="label">Etap / grupa</label>
-                <select id="dosePurpose">
-                  <option value="Premedykacja" ${state.dosePurpose === 'Premedykacja' ? 'selected' : ''}>Premedykacja</option>
-                  <option value="Indukcja" ${state.dosePurpose === 'Indukcja' ? 'selected' : ''}>Indukcja</option>
-                  <option value="Analgezja" ${state.dosePurpose === 'Analgezja' ? 'selected' : ''}>Analgezja</option>
-                  <option value="Wszystkie" ${state.dosePurpose === 'Wszystkie' ? 'selected' : ''}>Wszystkie leki</option>
-                </select>
-              </div>
-
               <div class="breed-field">
                 <label class="label">Nazwa leku</label>
-                <input id="doseDrugName" value="${escapeHtml(state.doseDrugName || '')}" placeholder="Np. medetomidyna" autocomplete="off">
+                <input id="doseDrugName" value="${escapeHtml(state.doseDrugName || '')}" placeholder="Np. ketamina" autocomplete="off">
                 ${renderDrugSuggestionsMarkup()}
               </div>
 
@@ -1239,12 +980,12 @@ function dosesView() {
 
               <div>
                 <label class="label">Dawka (mg/kg)</label>
-                <input id="doseMgKg" type="number" inputmode="decimal" step="0.001" value="${escapeHtml(state.doseMgKg || '')}">
+                <input id="doseMgKg" type="number" inputmode="decimal" step="0.01" value="${escapeHtml(state.doseMgKg || '')}">
               </div>
 
               <div>
                 <label class="label">Stężenie preparatu (mg/ml)</label>
-                <input id="doseMgMl" type="number" inputmode="decimal" step="0.001" value="${escapeHtml(state.doseMgMl || '')}">
+                <input id="doseMgMl" type="number" inputmode="decimal" step="0.01" value="${escapeHtml(state.doseMgMl || '')}">
               </div>
 
               <div>
@@ -1255,9 +996,6 @@ function dosesView() {
               ${renderDoseRouteMarkup()}
             </div>
 
-            <div class="space-12"></div>
-            ${renderSelectedDrugInfoMarkup()}
-
             <div class="space-16"></div>
 
             <div class="card inner-card">
@@ -1267,28 +1005,18 @@ function dosesView() {
                 <div class="results-grid">
                   <div class="result-box">
                     <div class="result-label">Dawka całkowita</div>
-                    <div class="result-value" id="doseTotalMg">${formatDoseNumber(calc.totalMg)} mg</div>
+                    <div class="result-value" id="doseTotalMg">${totalMg.toFixed(2)} mg</div>
                   </div>
 
                   <div class="result-box">
                     <div class="result-label">Objętość do podania</div>
-                    <div class="result-value" id="doseTotalMl">${formatDoseNumber(calc.totalMl)} ml</div>
+                    <div class="result-value" id="doseTotalMl">${totalMl.toFixed(2)} ml</div>
                   </div>
                 </div>
 
                 <div class="space-12"></div>
 
-                <div class="small" id="doseFormula">${escapeHtml(calc.formula)}</div>
-
-                <div class="space-8"></div>
-
                 <div class="small" id="dosePresetNote">${escapeHtml(state.dosePresetNote || 'Brak dodatkowej uwagi.')}</div>
-
-                <div class="space-8"></div>
-
-                <div id="doseWarnings">
-                  ${calc.warnings.length ? calc.warnings.map((warning) => `<div class="vitals-alert-item warning-text">${escapeHtml(warning)}</div>`).join('') : '<div class="small">Brak ostrzeżeń.</div>'}
-                </div>
 
                 <div class="space-12"></div>
 
@@ -1298,12 +1026,11 @@ function dosesView() {
               </div>
             </div>
           `
-              : state.doseTab === 'protocols'
-              ? `
+              : `
             <div class="card inner-card">
               <div class="card-body">
-                <h3>Protokoły</h3>
-                <div class="small">Gotowy protokół chirurgiczny: medetomidyna + metadon dla psa i kota.</div>
+                <h3>Protokoły / kombinacje leków</h3>
+                <div class="small">Na start: gotowe kombinacje do premedykacji.</div>
               </div>
             </div>
 
@@ -1315,8 +1042,119 @@ function dosesView() {
 
             ${renderProtocolPreviewMarkup()}
           `
-              : renderDrugLibraryMarkup()
           }
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+
+function getLibraryDrugs() {
+  const q = (state.librarySearch || '').trim().toLowerCase();
+  const species = state.librarySpecies || '';
+  return DRUG_PRESETS.filter((drug) => {
+    const speciesOk = !species || drug.species === 'Oba' || drug.species === species;
+    const haystack = [drug.name, drug.category, drug.species, drug.substance || '', drug.note || '', drug.route || '']
+      .join(' ')
+      .toLowerCase();
+    return speciesOk && (!q || haystack.includes(q));
+  });
+}
+
+function getDrugMlResult(drug, weightValue) {
+  const weight = Number(weightValue || 0);
+  if (weight <= 0) return 'Wpisz masę ciała';
+
+  if (Array.isArray(drug.doseRangeMlPerKg) && drug.doseRangeMlPerKg.length === 2) {
+    const min = weight * Number(drug.doseRangeMlPerKg[0]);
+    const max = weight * Number(drug.doseRangeMlPerKg[1]);
+    return `${formatDoseNumber(min)}–${formatDoseNumber(max)} ml`;
+  }
+
+  const mlPerKg = Number(drug.mlPerKg || 0);
+  if (mlPerKg > 0) return `${formatDoseNumber(weight * mlPerKg)} ml`;
+
+  const mgKg = Number(drug.mgKg || 0);
+  const mgMl = Number(drug.mgMl || 0);
+  if (mgKg > 0 && mgMl > 0) return `${formatDoseNumber((weight * mgKg) / mgMl)} ml`;
+  if (mgKg > 0) return `${formatDoseNumber(weight * mgKg)} mg`;
+
+  return 'Brak danych do wyliczenia';
+}
+
+function renderLibraryListMarkup() {
+  const drugs = getLibraryDrugs();
+  if (!drugs.length) return `<div class="small">Nie znaleziono leku.</div>`;
+
+  return drugs
+    .map((drug) => `
+      <div class="drug-library-card">
+        <div class="drug-library-head">
+          <div>
+            <div class="menu-title">${escapeHtml(drug.name)}</div>
+            <div class="small">${escapeHtml(drug.category || '')}${drug.substance ? ' • ' + escapeHtml(drug.substance) : ''}</div>
+          </div>
+          <span class="badge">${escapeHtml(drug.species || 'Oba')}</span>
+        </div>
+        <div class="results-grid">
+          <div class="result-box">
+            <div class="result-label">Wynik dla masy ciała</div>
+            <div class="result-value small-result">${escapeHtml(getDrugMlResult(drug, state.libraryWeight))}</div>
+          </div>
+          <div class="result-box">
+            <div class="result-label">Droga podania</div>
+            <div class="result-value small-result">${escapeHtml((drug.routeOptions || [drug.route || '']).filter(Boolean).join(' / '))}</div>
+          </div>
+        </div>
+        <div class="small drug-note">${escapeHtml(drug.note || '')}</div>
+      </div>
+    `)
+    .join('');
+}
+
+function refreshLibraryListOnly() {
+  const box = document.getElementById('libraryList');
+  if (box) box.innerHTML = renderLibraryListMarkup();
+}
+
+function libraryView() {
+  return `
+    <div class="app">
+      <div class="toolbar">
+        <button class="btn secondary" id="backHomeBtn">Powrót do menu</button>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <h3>Biblioteka leków</h3>
+          <div class="small">Osobna baza leków z kalkulatorem objętości. Wyszukiwarka działa bez przeładowywania całego ekranu.</div>
+
+          <div class="space-16"></div>
+
+          <div class="grid g3">
+            <div>
+              <label class="label">Szukaj leku</label>
+              <input id="librarySearch" value="${escapeHtml(state.librarySearch || '')}" placeholder="Np. synulox, antybiotyk, maropitant" autocomplete="off">
+            </div>
+            <div>
+              <label class="label">Gatunek</label>
+              <select id="librarySpecies">
+                <option value="">Wszystkie</option>
+                <option value="Pies" ${state.librarySpecies === 'Pies' ? 'selected' : ''}>Pies</option>
+                <option value="Kot" ${state.librarySpecies === 'Kot' ? 'selected' : ''}>Kot</option>
+              </select>
+            </div>
+            <div>
+              <label class="label">Masa ciała (kg)</label>
+              <input id="libraryWeight" type="number" inputmode="decimal" step="0.01" value="${escapeHtml(state.libraryWeight || state.doseWeight || state.form.weight || '')}" placeholder="Np. 12.5">
+            </div>
+          </div>
+
+          <div class="space-16"></div>
+          <div id="libraryList" class="drug-library-list">
+            ${renderLibraryListMarkup()}
+          </div>
         </div>
       </div>
     </div>
@@ -1924,110 +1762,53 @@ function refreshVitalsAlertsOnly() {
   `;
 }
 
-
-function vitalsRowHasAnyValue(row) {
-  return ['hr', 'spo2', 'etco2', 'temp', 'pressure', 'mac'].some((key) => String(row?.[key] || '').trim() !== '');
-}
-
-function ensureExtraVitalsRows() {
-  const rows = state.form.vitals || [];
-  if (!rows.length) {
-    state.form.vitals = vitalsTemplate();
-    return false;
-  }
-
-  const last = rows[rows.length - 1];
-  if (!vitalsRowHasAnyValue(last)) return false;
-
-  const lastTime = Number(last.time || 0);
-  for (let i = 1; i <= 5; i += 1) {
-    rows.push({
-      time: String(lastTime + i * 5),
-      hr: '',
-      spo2: '',
-      etco2: '',
-      temp: '',
-      pressure: '',
-      mac: ''
-    });
-  }
-
-  return true;
-}
-
-function getSurgeryStartDateTime() {
-  if (!state.form.surgeryStart) return null;
-  const [hours, minutes] = state.form.surgeryStart.split(':').map(Number);
-  if (Number.isNaN(hours) || Number.isNaN(minutes)) return null;
-
-  const date = new Date();
-  date.setHours(hours, minutes, 0, 0);
-  return date;
-}
-
-function hasVitalsAfterSurgeryStart() {
-  return (state.form.vitals || []).some((row) => vitalsRowHasAnyValue(row));
-}
-
-function checkVitalsReminder() {
-  if (!state.unlocked || state.currentPage !== 'plan') return;
-  const start = getSurgeryStartDateTime();
-  if (!start) return;
-
-  const now = new Date();
-  const minutesFromStart = (now - start) / 60000;
-  if (minutesFromStart < 10) return;
-  if (hasVitalsAfterSurgeryStart()) return;
-
-  const last = Number(state.lastVitalsReminderAt || 0);
-  if (last && now.getTime() - last < 10 * 60000) return;
-
-  state.lastVitalsReminderAt = now.getTime();
-  alert('Przypomnienie: zabieg trwa już około 10 minut. Wpisz parametry pacjenta podczas zabiegu.');
-}
-
 function addDoseToPlan() {
+  const weight = Number(state.doseWeight || 0);
+  const mgKg = Number(state.doseMgKg || 0);
+  const mgMl = Number(state.doseMgMl || 0);
+  const mlPerKg = Number(state.doseMlPerKg || 0);
   const drugName = (state.doseDrugName || '').trim();
   const preset = getSelectedDrugPreset();
-  const calc = getDoseCalculation();
 
   if (!drugName) {
     alert('Najpierw wpisz lub wybierz nazwę leku.');
     return;
   }
 
-  if (calc.weight <= 0) {
+  if (weight <= 0) {
     alert('Najpierw wpisz masę ciała.');
     return;
   }
 
-  if (preset && Array.isArray(preset.mgKgOptions) && preset.mgKgOptions.length && !calc.mgKg) {
+  if (preset && Array.isArray(preset.mgKgOptions) && preset.mgKgOptions.length && !mgKg) {
     alert('Najpierw wybierz dawkę mg/kg z listy.');
     return;
   }
 
-  if (!calc.hasResult) {
+  let totalMg = 0;
+  let totalMl = 0;
+
+  if (weight > 0 && mlPerKg > 0) {
+    totalMl = weight * mlPerKg;
+    totalMg = mgMl > 0 ? totalMl * mgMl : 0;
+  } else if (weight > 0 && mgKg > 0) {
+    totalMg = weight * mgKg;
+    totalMl = mgMl > 0 ? totalMg / mgMl : 0;
+  } else {
     alert('Uzupełnij dawkę mg/kg albo schemat ml/kg.');
     return;
   }
 
-  const doseParts = [];
-  if (calc.totalMg > 0) doseParts.push(`${formatDoseNumber(calc.totalMg)} mg`);
-  if (calc.totalMl > 0) doseParts.push(`${formatDoseNumber(calc.totalMl)} ml`);
-
-  const details = [];
-  if (calc.mgKg > 0 && calc.mlPerKg <= 0) details.push(`${formatDoseNumber(calc.mgKg, 3)} mg/kg`);
-  if (calc.mlPerKg > 0) details.push(`${formatDoseNumber(calc.mlPerKg, 3)} ml/kg`);
-  if (calc.mgMl > 0) details.push(`${formatDoseNumber(calc.mgMl)} mg/ml`);
-
   const newRow = {
     name: drugName,
-    dose: doseParts.join(' / '),
+    dose: `${totalMg.toFixed(2)} mg / ${totalMl.toFixed(2)} ml`,
     route: state.doseRoute || '',
-    notes: [`Etap: ${getDosePurposeLabel()}`, details.join(' • '), state.dosePresetNote || ''].filter(Boolean).join(' | ')
+    notes: state.dosePresetNote || ''
   };
 
-  const emptyRow = state.form.drugTable.find((row) => !row.name && !row.dose && !row.route && !row.notes);
+  const emptyRow = state.form.drugTable.find(
+    (row) => !row.name && !row.dose && !row.route && !row.notes
+  );
 
   if (emptyRow) {
     emptyRow.name = newRow.name;
@@ -2112,6 +1893,32 @@ function bind() {
     };
   }
 
+
+  const librarySearch = document.getElementById('librarySearch');
+  if (librarySearch) {
+    librarySearch.oninput = (e) => {
+      state.librarySearch = e.target.value;
+      refreshLibraryListOnly();
+    };
+  }
+
+  const librarySpecies = document.getElementById('librarySpecies');
+  if (librarySpecies) {
+    librarySpecies.onchange = (e) => {
+      state.librarySpecies = e.target.value;
+      refreshLibraryListOnly();
+    };
+  }
+
+  const libraryWeight = document.getElementById('libraryWeight');
+  if (libraryWeight) {
+    if (!state.libraryWeight && libraryWeight.value) state.libraryWeight = libraryWeight.value;
+    libraryWeight.oninput = (e) => {
+      state.libraryWeight = e.target.value;
+      refreshLibraryListOnly();
+    };
+  }
+
   const doseTabCalculator = document.getElementById('doseTabCalculator');
   if (doseTabCalculator) {
     doseTabCalculator.onclick = () => {
@@ -2126,24 +1933,6 @@ function bind() {
       state.doseTab = 'protocols';
       render();
     };
-  }
-
-  const doseTabLibrary = document.getElementById('doseTabLibrary');
-  if (doseTabLibrary) {
-    doseTabLibrary.onclick = () => {
-      state.doseTab = 'library';
-      render();
-    };
-  }
-
-  const clearDoseBtn = document.getElementById('clearDoseBtn');
-  if (clearDoseBtn) {
-    clearDoseBtn.onclick = () => clearDoseCalculator();
-  }
-
-  const usePatientWeightBtn = document.getElementById('usePatientWeightBtn');
-  if (usePatientWeightBtn) {
-    usePatientWeightBtn.onclick = () => usePatientWeightInDoseCalculator();
   }
 
   const doseSpecies = document.getElementById('doseSpecies');
@@ -2161,24 +1950,6 @@ function bind() {
         state.dosePresetNote = '';
       }
 
-      render();
-    };
-  }
-
-  const dosePurpose = document.getElementById('dosePurpose');
-  if (dosePurpose) {
-    dosePurpose.onchange = (e) => {
-      state.dosePurpose = e.target.value;
-      const preset = getSelectedDrugPreset();
-      if (!preset || !drugMatchesDosePurpose(preset)) {
-        state.doseDrugName = '';
-        state.doseMgKg = '';
-        state.doseMgMl = '';
-        state.doseMlPerKg = '';
-        state.dosePresetNote = '';
-        state.doseRoute = '';
-        state.doseMgKgChoice = '';
-      }
       render();
     };
   }
@@ -2218,13 +1989,6 @@ function bind() {
   const doseRouteSelect = document.getElementById('doseRouteSelect');
   if (doseRouteSelect) {
     doseRouteSelect.onchange = (e) => {
-      state.doseRoute = e.target.value;
-    };
-  }
-
-  const doseRouteInput = document.getElementById('doseRouteInput');
-  if (doseRouteInput) {
-    doseRouteInput.oninput = (e) => {
       state.doseRoute = e.target.value;
     };
   }
@@ -2281,33 +2045,10 @@ function bind() {
     };
   }
 
-  const librarySearch = document.getElementById('librarySearch');
-  if (librarySearch) {
-    librarySearch.oninput = (e) => {
-      state.librarySearch = e.target.value;
-      render();
-    };
-  }
-
-  const addLibraryDrugBtn = document.getElementById('addLibraryDrugBtn');
-  if (addLibraryDrugBtn) {
-    addLibraryDrugBtn.onclick = () => addCustomDrugFromLibrary();
-  }
-
-  document.querySelectorAll('[data-library-use]').forEach((el) => {
-    el.onclick = () => {
-      useLibraryDrug(el.dataset.libraryUse, el.dataset.librarySpecies);
-    };
-  });
-
   document.querySelectorAll('[data-field]').forEach((el) => {
     el.oninput = (e) => {
       const field = e.target.dataset.field;
       state.form[field] = e.target.value;
-
-      if (field === 'surgeryStart') {
-        state.lastVitalsReminderAt = 0;
-      }
 
       if (field === 'species') {
         state.form.breed = '';
@@ -2324,10 +2065,6 @@ function bind() {
     el.onchange = (e) => {
       const field = e.target.dataset.field;
       state.form[field] = e.target.value;
-
-      if (field === 'surgeryStart') {
-        state.lastVitalsReminderAt = 0;
-      }
 
       if (field === 'species') {
         state.form.breed = '';
@@ -2372,10 +2109,8 @@ function bind() {
   document.querySelectorAll('[data-vitals]').forEach((el) => {
     el.oninput = (e) => {
       state.form.vitals[+e.target.dataset.vitals][e.target.dataset.key] = e.target.value;
-      const addedRows = ensureExtraVitalsRows();
       saveDraft();
-      if (addedRows) render();
-      else refreshVitalsAlertsOnly();
+      refreshVitalsAlertsOnly();
     };
   });
 
@@ -2893,5 +2628,4 @@ window.addEventListener('pagehide', () => {
 });
 
 applyTheme();
-setInterval(checkVitalsReminder, 60000);
 render();
