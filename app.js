@@ -433,6 +433,13 @@ function applyTheme() {
   document.body.setAttribute('data-theme', state.theme);
 }
 
+
+function getThemeLabel() {
+  if (state.theme === 'dark') return 'Tryb ciemny';
+  if (state.theme === 'pink') return 'Tryb różowy';
+  return 'Tryb jasny';
+}
+
 function uid() {
   return Math.random().toString(36).slice(2, 10);
 }
@@ -1017,7 +1024,7 @@ function homeView() {
           <div class="topbar-title">${APP_NAME}</div>
           <div class="topbar-sub">Wybierz moduł</div>
         </div>
-        <div class="theme-pill">${state.theme === 'dark' ? 'Tryb ciemny' : 'Tryb jasny'}</div>
+        <div class="theme-pill">${getThemeLabel()}</div>
       </div>
 
       <div class="hero-card">
@@ -1389,6 +1396,7 @@ function settingsView() {
             <select id="themeSelect">
               <option value="light" ${state.theme === 'light' ? 'selected' : ''}>Jasny</option>
               <option value="dark" ${state.theme === 'dark' ? 'selected' : ''}>Ciemny</option>
+              <option value="pink" ${state.theme === 'pink' ? 'selected' : ''}>Różowy</option>
             </select>
           </div>
 

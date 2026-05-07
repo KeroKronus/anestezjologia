@@ -37,6 +37,25 @@ body[data-theme='dark'] {
   --badge-text: #dce9ff;
 }
 
+
+body[data-theme='pink'] {
+  --bg: #fff1f7;
+  --bg-secondary: #ffe1ee;
+  --surface: #ffffff;
+  --surface-2: #fff7fb;
+  --text: #351427;
+  --muted: #80536c;
+  --border: #f3b9d2;
+  --primary: #d63384;
+  --primary-strong: #ad1f66;
+  --danger: #d64568;
+  --warning: #d98b00;
+  --shadow: 0 10px 30px rgba(173, 31, 102, 0.14);
+  --shadow-soft: 0 4px 12px rgba(173, 31, 102, 0.10);
+  --badge-bg: #ffe4f0;
+  --badge-text: #8f1f55;
+}
+
 *,
 *::before,
 *::after {
@@ -65,7 +84,11 @@ body {
 body[data-theme='dark'],
 body[data-theme='dark'] #app,
 body[data-theme='dark'] .app,
-body[data-theme='dark'] .login {
+body[data-theme='dark'] .login,
+body[data-theme='pink'],
+body[data-theme='pink'] #app,
+body[data-theme='pink'] .app,
+body[data-theme='pink'] .login {
   background: linear-gradient(180deg, var(--bg) 0%, var(--bg-secondary) 100%);
 }
 
@@ -324,6 +347,33 @@ textarea {
 .full-btn {
   width: 100%;
   max-width: 100%;
+}
+
+
+body[data-theme='pink'] .hero-card,
+body[data-theme='pink'] .app-icon-wrap,
+body[data-theme='pink'] .primary-btn {
+  background: linear-gradient(135deg, #f45aa0 0%, #d63384 55%, #ad1f66 100%);
+}
+
+body[data-theme='pink'] .menu-card-plan {
+  background: linear-gradient(135deg, rgba(214, 51, 132, 0.18), rgba(214, 51, 132, 0.06));
+}
+
+body[data-theme='pink'] .menu-card-dose {
+  background: linear-gradient(135deg, rgba(244, 90, 160, 0.18), rgba(244, 90, 160, 0.06));
+}
+
+body[data-theme='pink'] .menu-card-settings {
+  background: linear-gradient(135deg, rgba(173, 31, 102, 0.16), rgba(173, 31, 102, 0.05));
+}
+
+body[data-theme='pink'] .menu-card-thanks {
+  background: linear-gradient(135deg, rgba(255, 138, 183, 0.18), rgba(255, 138, 183, 0.06));
+}
+
+body[data-theme='pink'] .menu-card-library {
+  background: linear-gradient(135deg, rgba(255, 105, 180, 0.16), rgba(255, 105, 180, 0.05));
 }
 
 .import-label {
