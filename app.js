@@ -5,7 +5,7 @@ const THEME_KEY = 'anestezjologia-theme-v1';
 const SUPABASE_CONFIG_KEY = 'anestezjologia-supabase-config-v1';
 
 // Uzupełnij po utworzeniu projektu w Supabase. Anon key jest kluczem publicznym.
-const SUPABASE_URL = 'https://ilxjcjfdqlwptzisdtyk.supabase.co';
+const SUPABASE_URL = 'https://ilxjcfjdqlwptzisdtvk.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_XV7bWa3IcA5TCLz9iBuldQ_gW6GiLEg';
 
 
@@ -2794,6 +2794,10 @@ function bind() {
   });
 }
 
+function isUuid(value) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value || ''));
+}
+
 async function saveCurrent() {
   const now = new Date().toISOString();
   const client = getSupabaseClient();
@@ -2813,7 +2817,7 @@ async function saveCurrent() {
     };
 
     let result;
-    if (state.selectedId) {
+    if (state.selectedId && isUuid(state.selectedId)) {
       result = await client
         .from('patients')
         .update(payload)
