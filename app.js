@@ -5,7 +5,7 @@ const THEME_KEY = 'anestezjologia-theme-v1';
 const SUPABASE_CONFIG_KEY = 'anestezjologia-supabase-config-v1';
 
 // Uzupełnij po utworzeniu projektu w Supabase. Anon key jest kluczem publicznym.
-const SUPABASE_URL = 'https://ilxjcfjdqlwptzisdtvk.supabase.co';
+const SUPABASE_URL = 'https://ilxjcjfdqlwptzisdtyk.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_XV7bWa3IcA5TCLz9iBuldQ_gW6GiLEg';
 
 
