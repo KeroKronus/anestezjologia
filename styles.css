@@ -19,6 +19,25 @@
   --radius-sm: 12px;
 }
 
+
+body[data-theme='pink'] {
+  --bg: #fff1f7;
+  --bg-secondary: #ffe4ef;
+  --surface: #ffffff;
+  --surface-2: #fff7fb;
+  --text: #321225;
+  --muted: #8a526e;
+  --border: #f4bfd4;
+  --primary: #ec4899;
+  --primary-strong: #be185d;
+  --danger: #dc2626;
+  --warning: #d97706;
+  --shadow: 0 10px 30px rgba(190, 24, 93, 0.12);
+  --shadow-soft: 0 4px 12px rgba(190, 24, 93, 0.10);
+  --badge-bg: #ffe4ef;
+  --badge-text: #9d174d;
+}
+
 body[data-theme='dark'] {
   --bg: #0f1722;
   --bg-secondary: #162130;
@@ -65,7 +84,11 @@ body {
 body[data-theme='dark'],
 body[data-theme='dark'] #app,
 body[data-theme='dark'] .app,
-body[data-theme='dark'] .login {
+body[data-theme='dark'] .login,
+body[data-theme='pink'],
+body[data-theme='pink'] #app,
+body[data-theme='pink'] .app,
+body[data-theme='pink'] .login {
   background: linear-gradient(180deg, var(--bg) 0%, var(--bg-secondary) 100%);
 }
 

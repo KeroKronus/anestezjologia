@@ -2,12 +2,6 @@ const APP_KEY = 'anestezjologia-techwet-v2';
 const PIN_KEY = 'anestezjologia-pin-v1';
 const DRAFT_KEY = 'anestezjologia-draft-v1';
 const THEME_KEY = 'anestezjologia-theme-v1';
-const SUPABASE_CONFIG_KEY = 'anestezjologia-supabase-config-v1';
-
-// Uzupełnij po utworzeniu projektu w Supabase. Anon key jest kluczem publicznym.
-const SUPABASE_URL = 'https://ilxjcjfdqlwptzisdtyk.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_XV7bWa3IcA5TCLz9iBuldQ_gW6GiLEg';
-
 
 const AUTHOR = 'Tech.Wet Woroch Marcin';
 const APP_NAME = 'Anestezjologia';
@@ -388,12 +382,7 @@ let state = {
   librarySearch: '',
   librarySpecies: '',
   libraryWeight: '',
-  libraryDrugName: '',
-  session: null,
-  user: null,
-  profile: null,
-  syncStatus: '',
-  authLoading: false
+  libraryDrugName: ''
 };
 
 function loadRecords() {
@@ -406,252 +395,6 @@ function loadRecords() {
 
 function saveRecords() {
   localStorage.setItem(APP_KEY, JSON.stringify(state.records));
-}
-
-function loadSupabaseConfig() {
-  try {
-    const local = JSON.parse(localStorage.getItem(SUPABASE_CONFIG_KEY) || '{}');
-    return {
-      url: (local.url || SUPABASE_URL || '').trim(),
-      anonKey: (local.anonKey || SUPABASE_ANON_KEY || '').trim()
-    };
-  } catch {
-    return { url: SUPABASE_URL.trim(), anonKey: SUPABASE_ANON_KEY.trim() };
-  }
-}
-
-function saveSupabaseConfig(url, anonKey) {
-  localStorage.setItem(
-    SUPABASE_CONFIG_KEY,
-    JSON.stringify({ url: (url || '').trim(), anonKey: (anonKey || '').trim() })
-  );
-}
-
-function isSupabaseConfigured() {
-  const cfg = loadSupabaseConfig();
-  return Boolean(cfg.url && cfg.anonKey && window.supabase);
-}
-
-let supabaseClient = null;
-
-function getSupabaseClient() {
-  if (!isSupabaseConfigured()) return null;
-  if (supabaseClient) return supabaseClient;
-  const cfg = loadSupabaseConfig();
-  supabaseClient = window.supabase.createClient(cfg.url, cfg.anonKey);
-  return supabaseClient;
-}
-
-function getDisplayUserName() {
-  return state.profile?.full_name || state.profile?.username || state.user?.email || 'Użytkownik';
-}
-
-function mapCloudRecord(row) {
-  const data = row.data_json || {};
-  return {
-    id: row.id,
-    data: {
-      ...data,
-      animalName: data.animalName || row.animal_name || '',
-      ownerName: data.ownerName || row.owner_name || '',
-      species: data.species || row.species || '',
-      createdAt: data.createdAt || row.created_at || '',
-      updatedAt: data.updatedAt || row.updated_at || ''
-    },
-    createdByName: row.created_by_profile?.full_name || row.created_by_profile?.username || '',
-    updatedByName: row.updated_by_profile?.full_name || row.updated_by_profile?.username || ''
-  };
-}
-
-async function loadProfile() {
-  const client = getSupabaseClient();
-  if (!client || !state.user) return null;
-
-  const { data, error } = await client
-    .from('profiles')
-    .select('id, username, full_name, role')
-    .eq('id', state.user.id)
-    .maybeSingle();
-
-  if (error) {
-    console.warn('Profil:', error.message);
-    state.syncStatus = 'Nie udało się wczytać profilu.';
-    return null;
-  }
-
-  state.profile = data || null;
-  return state.profile;
-}
-
-async function ensureProfile(fullName = '') {
-  const client = getSupabaseClient();
-  if (!client || !state.user) return;
-
-  const emailName = (state.user.email || '').split('@')[0] || 'uzytkownik';
-  const profile = {
-    id: state.user.id,
-    username: emailName,
-    full_name: fullName || state.user.user_metadata?.full_name || emailName
-  };
-
-  const { error } = await client.from('profiles').upsert(profile, { onConflict: 'id' });
-  if (error) console.warn('Upsert profilu:', error.message);
-  await loadProfile();
-}
-
-async function loadCloudRecords() {
-  const client = getSupabaseClient();
-  if (!client || !state.user) return;
-
-  state.syncStatus = 'Synchronizacja bazy...';
-  const { data, error } = await client
-    .from('patients')
-    .select(`
-      id,
-      animal_name,
-      owner_name,
-      species,
-      data_json,
-      created_at,
-      updated_at,
-      created_by_profile:profiles!patients_created_by_fkey(username, full_name),
-      updated_by_profile:profiles!patients_updated_by_fkey(username, full_name)
-    `)
-    .order('updated_at', { ascending: false });
-
-  if (error) {
-    console.error(error);
-    state.syncStatus = 'Błąd synchronizacji: ' + error.message;
-    return;
-  }
-
-  state.records = (data || []).map(mapCloudRecord);
-  saveRecords();
-
-  if (!state.selectedId && state.records[0] && !loadDraft()) {
-    state.selectedId = state.records[0].id;
-    state.form = JSON.parse(JSON.stringify(state.records[0].data));
-  }
-
-  state.syncStatus = `Online: ${state.records.length} kart pacjentów`;
-}
-
-async function signInWithEmail() {
-  const client = getSupabaseClient();
-  if (!client) {
-    alert('Najpierw wpisz SUPABASE_URL i SUPABASE_ANON_KEY w app.js albo w ustawieniach lokalnych.');
-    return;
-  }
-
-  const email = document.getElementById('authEmail')?.value.trim();
-  const password = document.getElementById('authPassword')?.value;
-  if (!email || !password) {
-    alert('Wpisz e-mail i hasło. Tak, komputer nadal nie czyta w myślach.');
-    return;
-  }
-
-  state.authLoading = true;
-  render();
-  const { data, error } = await client.auth.signInWithPassword({ email, password });
-  state.authLoading = false;
-
-  if (error) {
-    alert('Logowanie nieudane: ' + error.message);
-    render();
-    return;
-  }
-
-  state.session = data.session;
-  state.user = data.user;
-  state.unlocked = true;
-  state.currentPage = 'home';
-  await loadProfile();
-  await loadCloudRecords();
-  render();
-}
-
-async function signUpWithEmail() {
-  const client = getSupabaseClient();
-  if (!client) {
-    alert('Najpierw skonfiguruj Supabase.');
-    return;
-  }
-
-  const email = document.getElementById('authEmail')?.value.trim();
-  const password = document.getElementById('authPassword')?.value;
-  const fullName = document.getElementById('authFullName')?.value.trim();
-  if (!email || !password || !fullName) {
-    alert('Wpisz imię, e-mail i hasło. Dramatycznie wymagające, wiem.');
-    return;
-  }
-
-  state.authLoading = true;
-  render();
-  const { data, error } = await client.auth.signUp({
-    email,
-    password,
-    options: { data: { full_name: fullName } }
-  });
-  state.authLoading = false;
-
-  if (error) {
-    alert('Rejestracja nieudana: ' + error.message);
-    render();
-    return;
-  }
-
-  state.session = data.session;
-  state.user = data.user;
-  if (state.user) await ensureProfile(fullName);
-
-  if (state.session) {
-    state.unlocked = true;
-    state.currentPage = 'home';
-    await loadCloudRecords();
-    render();
-  } else {
-    alert('Konto utworzone. Jeśli Supabase wymaga potwierdzenia e-maila, sprawdź skrzynkę.');
-    render();
-  }
-}
-
-async function signOut() {
-  const client = getSupabaseClient();
-  if (client) await client.auth.signOut();
-  state.session = null;
-  state.user = null;
-  state.profile = null;
-  state.unlocked = false;
-  state.currentPage = 'home';
-  state.selectedId = null;
-  state.form = loadDraft() || blankForm();
-  render();
-}
-
-async function initSupabaseAuth() {
-  const client = getSupabaseClient();
-  if (!client) return;
-
-  const { data } = await client.auth.getSession();
-  if (data?.session) {
-    state.session = data.session;
-    state.user = data.session.user;
-    state.unlocked = true;
-    await loadProfile();
-    await loadCloudRecords();
-    render();
-  }
-
-  client.auth.onAuthStateChange(async (_event, session) => {
-    state.session = session || null;
-    state.user = session?.user || null;
-    state.unlocked = Boolean(session);
-    if (session) {
-      await loadProfile();
-      await loadCloudRecords();
-    }
-    render();
-  });
 }
 
 function loadDraft() {
@@ -688,13 +431,6 @@ function saveTheme(theme) {
 
 function applyTheme() {
   document.body.setAttribute('data-theme', state.theme);
-}
-
-
-function getThemeLabel() {
-  if (state.theme === 'dark') return 'Tryb ciemny';
-  if (state.theme === 'pink') return 'Tryb różowy';
-  return 'Tryb jasny';
 }
 
 function uid() {
@@ -1249,9 +985,6 @@ function render() {
 }
 
 function loginView() {
-  const cfg = loadSupabaseConfig();
-  const onlineMode = isSupabaseConfigured();
-
   return `
     <div class="login">
       <div class="card login-card">
@@ -1264,44 +997,12 @@ function loginView() {
             <div class="sub">${AUTHOR}</div>
           </div>
 
-          ${onlineMode ? `
-            <label class="label">Imię pracownika</label>
-            <input id="authFullName" autocomplete="name" placeholder="Np. Marcin">
+          <label class="label">PIN</label>
+          <input id="pinInput" type="password" inputmode="numeric" placeholder="Wpisz PIN">
 
-            <div class="space-8"></div>
+          <button class="btn primary-btn" id="unlockBtn">Otworz aplikacje</button>
 
-            <label class="label">E-mail / login</label>
-            <input id="authEmail" type="email" autocomplete="email" placeholder="np. marcin@klinika.pl">
-
-            <div class="space-8"></div>
-
-            <label class="label">Hasło</label>
-            <input id="authPassword" type="password" autocomplete="current-password" placeholder="Hasło">
-
-            <div class="space-12"></div>
-
-            <button class="btn primary-btn full-btn" id="loginBtn" ${state.authLoading ? 'disabled' : ''}>
-              ${state.authLoading ? 'Logowanie...' : 'Zaloguj'}
-            </button>
-
-            <div class="space-8"></div>
-
-            <button class="btn secondary full-btn" id="registerBtn" ${state.authLoading ? 'disabled' : ''}>
-              Utwórz konto
-            </button>
-
-            <div class="footer-note center">Tryb online: wspólna baza pacjentów</div>
-          ` : `
-            <label class="label">PIN</label>
-            <input id="pinInput" type="password" inputmode="numeric" placeholder="Wpisz PIN">
-
-            <button class="btn primary-btn full-btn" id="unlockBtn">Otworz aplikacje</button>
-
-            <div class="footer-note center">
-              Tryb lokalny. Supabase nie jest jeszcze skonfigurowany.
-              <br>URL: ${cfg.url ? 'wpisany' : 'brak'} • key: ${cfg.anonKey ? 'wpisany' : 'brak'}
-            </div>
-          `}
+          <div class="footer-note center">Prywatna wersja mobilna</div>
         </div>
       </div>
     </div>
@@ -1314,9 +1015,9 @@ function homeView() {
       <div class="topbar">
         <div>
           <div class="topbar-title">${APP_NAME}</div>
-          <div class="topbar-sub">${state.user ? `Zalogowany: ${escapeHtml(getDisplayUserName())}` : 'Wybierz moduł'}</div>
+          <div class="topbar-sub">Wybierz moduł</div>
         </div>
-        <div class="theme-pill">${getThemeLabel()}</div>
+        <div class="theme-pill">${state.theme === 'dark' ? 'Tryb ciemny' : 'Tryb jasny'}</div>
       </div>
 
       <div class="hero-card">
@@ -1346,7 +1047,7 @@ function homeView() {
         <button class="menu-card menu-card-settings" data-nav="ustawienia">
           <div class="menu-icon">⚙️</div>
           <div class="menu-title">4. Ustawienia</div>
-          <div class="menu-sub">Konta, Supabase, motyw i tryb awaryjny</div>
+          <div class="menu-sub">PIN aplikacji, motyw i przyszłe opcje personalizacji</div>
         </button>
 
         <button class="menu-card menu-card-thanks" data-nav="podziekowania">
@@ -1668,14 +1369,10 @@ function libraryView() {
 }
 
 function settingsView() {
-  const cfg = loadSupabaseConfig();
-  const onlineMode = isSupabaseConfigured();
-
   return `
     <div class="app">
       <div class="toolbar">
         <button class="btn secondary" id="backHomeBtn">Powrot do menu</button>
-        ${onlineMode && state.user ? `<button class="btn danger" id="logoutBtn">Wyloguj</button>` : ''}
       </div>
 
       <div class="card">
@@ -1683,38 +1380,19 @@ function settingsView() {
           <h3>Ustawienia</h3>
 
           <div class="settings-group">
+            <label class="label">PIN aplikacji</label>
+            <input id="pinChangeSettings" type="password" inputmode="numeric" value="${escapeHtml(getPin())}">
+          </div>
+
+          <div class="settings-group">
             <label class="label">Motyw aplikacji</label>
             <select id="themeSelect">
               <option value="light" ${state.theme === 'light' ? 'selected' : ''}>Jasny</option>
               <option value="dark" ${state.theme === 'dark' ? 'selected' : ''}>Ciemny</option>
-              <option value="pink" ${state.theme === 'pink' ? 'selected' : ''}>Różowy</option>
             </select>
           </div>
 
-          <div class="settings-group">
-            <label class="label">Supabase Project URL</label>
-            <input id="supabaseUrlInput" value="${escapeHtml(cfg.url)}" placeholder="https://xxxxx.supabase.co">
-          </div>
-
-          <div class="settings-group">
-            <label class="label">Supabase anon public key</label>
-            <textarea id="supabaseAnonInput" placeholder="eyJ...">${escapeHtml(cfg.anonKey)}</textarea>
-          </div>
-
-          <button class="btn primary-btn full-btn" id="saveSupabaseConfigBtn">Zapisz konfigurację Supabase</button>
-
-          <div class="space-12"></div>
-
-          <div class="small">
-            Status: ${onlineMode ? `online jako ${escapeHtml(getDisplayUserName())}` : 'tryb lokalny / brak Supabase'}<br>
-            ${escapeHtml(state.syncStatus || '')}
-          </div>
-
-          <div class="section-separator">
-            <label class="label">PIN lokalny / awaryjny</label>
-            <input id="pinChangeSettings" type="password" inputmode="numeric" value="${escapeHtml(getPin())}">
-            <div class="small">PIN działa tylko w trybie lokalnym. Przy Supabase główne zabezpieczenie to konto użytkownika.</div>
-          </div>
+          <div class="small">Zmiana motywu zapisuje się automatycznie.</div>
         </div>
       </div>
     </div>
@@ -1774,8 +1452,6 @@ function mainView() {
         <div class="card no-print">
           <div class="card-body">
             <h3>Karty pacjentow</h3>
-            <div class="small">${escapeHtml(state.syncStatus || (state.user ? 'Online' : 'Tryb lokalny'))}</div>
-            <div class="space-8"></div>
             <input id="searchInput" placeholder="Szukaj..." value="${escapeHtml(state.query)}">
             <div class="space-12"></div>
             <button class="btn full-btn" id="newBtn">Nowa karta</button>
@@ -1792,7 +1468,6 @@ function mainView() {
                   <span class="badge">${escapeHtml(r.data.weight || '')}</span>
                 </div>
                 <div class="small record-note">${escapeHtml(r.data.procedureAsa || '')}</div>
-                ${r.createdByName ? `<div class="small">Dodano przez: ${escapeHtml(r.createdByName)}${r.updatedByName ? ` • Edycja: ${escapeHtml(r.updatedByName)}` : ''}</div>` : ''}
                 <div class="record-actions">
                   <button class="btn secondary openBtn" data-open="${r.id}" type="button">Otworz</button>
                   <button class="btn danger delBtn" data-del="${r.id}" type="button">Usun</button>
@@ -1803,7 +1478,7 @@ function mainView() {
               .join('')}
 
             <div class="section-separator">
-              <div class="small"><strong>Prywatnosc, kopia i tryb lokalny</strong></div>
+              <div class="small"><strong>Prywatnosc i kopia</strong></div>
               <div class="space-8"></div>
               <button class="btn secondary full-btn" id="exportBtn">Eksport kopii</button>
               <div class="space-8"></div>
@@ -1812,7 +1487,7 @@ function mainView() {
                 <input id="importInput" type="file" accept="application/json" style="display:none">
               </label>
               <div class="space-8"></div>
-              <label class="label">PIN lokalny / awaryjny</label>
+              <label class="label">PIN aplikacji</label>
               <input id="pinChange" type="password" inputmode="numeric" value="${escapeHtml(getPin())}">
             </div>
           </div>
@@ -2385,12 +2060,6 @@ function bindLibraryWeightInput() {
 
 function bind() {
   if (!state.unlocked) {
-    const loginBtn = document.getElementById('loginBtn');
-    if (loginBtn) loginBtn.onclick = signInWithEmail;
-
-    const registerBtn = document.getElementById('registerBtn');
-    if (registerBtn) registerBtn.onclick = signUpWithEmail;
-
     const unlockBtn = document.getElementById('unlockBtn');
     if (unlockBtn) {
       unlockBtn.onclick = () => {
@@ -2458,22 +2127,6 @@ function bind() {
       render();
     };
   }
-
-
-  const saveSupabaseConfigBtn = document.getElementById('saveSupabaseConfigBtn');
-  if (saveSupabaseConfigBtn) {
-    saveSupabaseConfigBtn.onclick = () => {
-      const url = document.getElementById('supabaseUrlInput')?.value || '';
-      const anonKey = document.getElementById('supabaseAnonInput')?.value || '';
-      saveSupabaseConfig(url, anonKey);
-      supabaseClient = null;
-      alert('Zapisano konfigurację Supabase. Odśwież aplikację i zaloguj się kontem. Tak, restart. Pradawna magia internetu.');
-      render();
-    };
-  }
-
-  const logoutBtn = document.getElementById('logoutBtn');
-  if (logoutBtn) logoutBtn.onclick = signOut;
 
 
   const librarySearch = document.getElementById('librarySearch');
@@ -2755,27 +2408,17 @@ function bind() {
   });
 
   document.querySelectorAll('[data-del]').forEach((b) => {
-    b.onclick = async (e) => {
+    b.onclick = (e) => {
       e.stopPropagation();
-      const id = e.currentTarget.dataset.del;
-      if (!confirm('Usunac te karte?')) return;
-
-      const client = getSupabaseClient();
-      if (client && state.user) {
-        const { error } = await client.from('patients').delete().eq('id', id);
-        if (error) {
-          alert('Nie udało się usunąć z bazy online: ' + error.message);
-          return;
+      if (confirm('Usunac te karte?')) {
+        state.records = state.records.filter((r) => r.id !== e.currentTarget.dataset.del);
+        saveRecords();
+        if (state.selectedId === e.currentTarget.dataset.del) {
+          state.selectedId = null;
+          state.form = blankForm();
         }
+        render();
       }
-
-      state.records = state.records.filter((r) => r.id !== id);
-      saveRecords();
-      if (state.selectedId === id) {
-        state.selectedId = null;
-        state.form = blankForm();
-      }
-      render();
     };
   });
 
@@ -2794,59 +2437,8 @@ function bind() {
   });
 }
 
-function isUuid(value) {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value || ''));
-}
-
-async function saveCurrent() {
+function saveCurrent() {
   const now = new Date().toISOString();
-  const client = getSupabaseClient();
-
-  if (client && state.user) {
-    const payload = {
-      animal_name: state.form.animalName || '',
-      owner_name: state.form.ownerName || '',
-      species: state.form.species || '',
-      data_json: {
-        ...state.form,
-        updatedAt: now,
-        createdAt: state.form.createdAt || now
-      },
-      updated_by: state.user.id,
-      updated_at: now
-    };
-
-    let result;
-    if (state.selectedId && isUuid(state.selectedId)) {
-      result = await client
-        .from('patients')
-        .update(payload)
-        .eq('id', state.selectedId)
-        .select('id')
-        .single();
-    } else {
-      result = await client
-        .from('patients')
-        .insert({
-          ...payload,
-          created_by: state.user.id
-        })
-        .select('id')
-        .single();
-    }
-
-    if (result.error) {
-      alert('Nie udało się zapisać online: ' + result.error.message);
-      return;
-    }
-
-    state.selectedId = result.data.id;
-    clearDraft();
-    await loadCloudRecords();
-    alert('Zapisano online');
-    render();
-    return;
-  }
 
   if (state.selectedId) {
     state.records = state.records.map((r) =>
@@ -2876,7 +2468,7 @@ async function saveCurrent() {
 
   saveRecords();
   clearDraft();
-  alert('Zapisano lokalnie');
+  alert('Zapisano');
   render();
 }
 
@@ -3269,4 +2861,3 @@ window.addEventListener('pagehide', () => {
 
 applyTheme();
 render();
-initSupabaseAuth();
