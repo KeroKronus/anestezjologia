@@ -1,92 +1,35 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pl">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
-  <title>Anestezjologia - Emergency</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#000000" />
+
+  <title>Anestezjologia</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json" />
+
+  <!-- Ikona -->
+  <link rel="icon" href="icons/icon-192.png" />
+
+  <!-- Style -->
   <link rel="stylesheet" href="styles.css" />
 </head>
+
 <body>
-  <header class="app-header">
-    <div>
-      <p class="eyebrow">Weterynaria</p>
-      <h1>Anestezjologia</h1>
-    </div>
-    <button id="themeToggle" class="small-btn" type="button">Motyw</button>
-  </header>
 
-  <main class="app-shell">
-    <section class="card patient-card">
-      <h2>Pacjent</h2>
-      <div class="form-grid">
-        <label>
-          Imię pacjenta
-          <input id="patientName" type="text" placeholder="np. Luna" autocomplete="off" />
-        </label>
-        <label>
-          Gatunek
-          <select id="species">
-            <option value="dog">Pies</option>
-            <option value="cat">Kot</option>
-          </select>
-        </label>
-        <label>
-          Masa ciała [kg]
-          <input id="weight" type="number" min="0" step="0.1" placeholder="np. 12.5" inputmode="decimal" />
-        </label>
-        <label>
-          ASA / ryzyko
-          <select id="asa">
-            <option>ASA I</option>
-            <option>ASA II</option>
-            <option>ASA III</option>
-            <option>ASA IV</option>
-            <option>ASA V</option>
-          </select>
-        </label>
-      </div>
-    </section>
+  <!-- Główna aplikacja -->
+  <div id="app"></div>
 
-    <button id="emergencyBtn" class="emergency-btn" type="button">EMERGENCY</button>
+  <!-- Biblioteka PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
-    <section class="card">
-      <h2>Notatki anestezjologiczne</h2>
-      <textarea id="notes" rows="8" placeholder="Tutaj wpisz plan, parametry, leki, uwagi..."></textarea>
-    </section>
-  </main>
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <div id="emergencyModal" class="emergency-modal hidden" role="dialog" aria-modal="true" aria-labelledby="emergencyTitle">
-    <div class="emergency-content">
-      <div class="emergency-header">
-        <div>
-          <p class="eyebrow danger-text">Tryb awaryjny</p>
-          <h2 id="emergencyTitle">Emergency drugs</h2>
-        </div>
-        <button id="closeEmergencyBtn" class="close-btn" type="button" aria-label="Zamknij">×</button>
-      </div>
-
-      <div id="emergencyWeightInfo" class="weight-pill">Masa pacjenta: brak</div>
-
-      <div class="scenario-tabs" aria-label="Wybór sytuacji awaryjnej">
-        <button class="scenario-tab active" type="button" data-scenario="cpr">RKO</button>
-        <button class="scenario-tab" type="button" data-scenario="bradycardia">Bradykardia</button>
-        <button class="scenario-tab" type="button" data-scenario="hypotension">Hipotensja</button>
-        <button class="scenario-tab" type="button" data-scenario="anaphylaxis">Anafilaksja</button>
-        <button class="scenario-tab" type="button" data-scenario="seizures">Drgawki</button>
-        <button class="scenario-tab" type="button" data-scenario="hypoglycemia">Hipoglikemia</button>
-        <button class="scenario-tab" type="button" data-scenario="reversal">Odwracanie</button>
-        <button class="scenario-tab" type="button" data-scenario="all">Wszystkie</button>
-      </div>
-
-      <div id="scenarioHelp" class="scenario-help"></div>
-      <div id="emergencyResults" class="emergency-results"></div>
-
-      <div class="emergency-warning">
-        <strong>Uwaga:</strong> dawki są kalkulatorem pomocniczym dla personelu weterynaryjnego. Zawsze potwierdź lek, stężenie, drogę podania i decyzję z lekarzem prowadzącym oraz protokołem placówki.
-      </div>
-    </div>
-  </div>
-
+  <!-- App -->
   <script src="app.js"></script>
+
 </body>
 </html>
