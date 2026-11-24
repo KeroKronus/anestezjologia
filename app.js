@@ -341,6 +341,11 @@ const blankForm = () => ({
     niespokojny: false
   },
   procedureAsa: '',
+  asaClass: '',
+  preAssessment: '',
+  baselineHr: '',
+  baselineRespiration: '',
+  baselineTemp: '',
   planPremed: '',
   planInduction: '',
   planMaintenance: '',
@@ -364,6 +369,7 @@ let state = {
   selectedId: initialDraft?.selectedId ?? null,
   form: initialDraft?.form ?? blankForm(),
   query: '',
+  patientStatusFilter: '',
   unlocked: false,
   currentPage: 'home',
   theme: loadTheme(),
@@ -563,9 +569,9 @@ async function signInWithEmail() {
   state.session = data.session;
   state.user = data.user;
   state.unlocked = true;
-  state.currentPage = 'home';
   await loadProfile();
   await loadCloudRecords();
+  state.currentPage = initialClinicPage();
   render();
 }
 
@@ -605,8 +611,8 @@ async function signUpWithEmail() {
 
   if (state.session) {
     state.unlocked = true;
-    state.currentPage = 'home';
     await loadCloudRecords();
+    state.currentPage = initialClinicPage();
     render();
   } else {
     alert('Konto utworzone. Jeśli Supabase wymaga potwierdzenia e-maila, sprawdź skrzynkę.');
@@ -640,16 +646,19 @@ async function initSupabaseAuth() {
     state.unlocked = true;
     await loadProfile();
     await loadCloudRecords();
+    state.currentPage = initialClinicPage();
     render();
   }
 
   client.auth.onAuthStateChange(async (_event, session) => {
+    const wasUnlocked = state.unlocked;
     state.session = session || null;
     state.user = session?.user || null;
     state.unlocked = Boolean(session);
     if (session) {
       await loadProfile();
       await loadCloudRecords();
+      if (!wasUnlocked) state.currentPage = initialClinicPage();
     }
     render();
   });
@@ -1234,7 +1243,7 @@ function loginView() {
         <div class="card-body">
           <div class="header login-header">
             <div class="app-icon-wrap">
-              <span class="clinic-mark" aria-hidden="true">+</span>
+              <span class="clinic-brand-mark">${clinicIcon('brand')}</span>
             </div>
             <h1>${APP_NAME}</h1>
             <div class="sub">${AUTHOR}</div>
@@ -1284,28 +1293,57 @@ function loginView() {
   `;
 }
 
+const clinicIcons = {
+  brand: '<path d="M3 42c3-6 9-13 13-16 3-3 3-8 6-12 2-4 5-6 9-5 3 0 5 2 6 5l6 2-1 4c-1 3-5 3-9 3-2 3-2 7 0 10"/><path d="M28 14v5l-3 2m7 21c-2-4-2-7 1-11l1-5 5 3 4-4 1 7c2 3 2 6 3 9"/>',
+  paw: '<ellipse cx="5" cy="10" rx="2.4" ry="3.2" transform="rotate(-25 5 10)"/><ellipse cx="10" cy="6" rx="2.4" ry="3.2" transform="rotate(-10 10 6)"/><ellipse cx="15.5" cy="6" rx="2.4" ry="3.2" transform="rotate(10 15.5 6)"/><ellipse cx="20" cy="10" rx="2.4" ry="3.2" transform="rotate(25 20 10)"/><path d="M12.5 11.5c2.6 0 3.5 2.4 6 4.3 3.1 2.4 1 6.2-2 5.4-1.2-.3-2.4-1-4-1s-2.8.7-4 1c-3 .8-5.1-3-2-5.4 2.5-1.9 3.4-4.3 6-4.3Z"/>',
+  folder: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><path d="M3 11h18"/>',
+  calculator: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 11h2m4 0h2m-8 4h2m4 0h2m-8 3h2m4 0h2"/>',
+  book: '<path d="M12 6v15M3 19V4h5c2 0 4 2 4 2s2-2 4-2h5v15h-5c-2 0-4 2-4 2s-2-2-4-2Z"/>',
+  monitor: '<rect x="3" y="4" width="18" height="13" rx="2"/><path d="M9 21h6m-3-4v4M6 11h3l2-3 2 5 2-2h3"/>',
+  settings: '<path d="M10 3h4l.7 2.4 2 .9 2.2-.9 2 3.5-1.7 1.8v2.6l1.7 1.8-2 3.5-2.2-.9-2 .9L14 21h-4l-.7-2.4-2-.9-2.2.9-2-3.5 1.7-1.8v-2.6L3.1 9l2-3.5 2.2.9 2-.9Z"/><circle cx="12" cy="12" r="3"/>',
+  search: '<circle cx="10.5" cy="10.5" r="5.5"/><path d="m15 15 4 4"/>',
+  menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',
+  more: '<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',
+  back: '<path d="M19 12H5m6-6-6 6 6 6"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  clipboard: '<rect x="5" y="5" width="14" height="16" rx="2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6m-6 4h6"/>',
+  pulse: '<path d="M2 12h5l2-5 4 10 3-5h6"/>',
+  lungs: '<path d="M12 3v9m0-4 3 4m-3-4-3 4m0-7c-3 0-5 4-6 8-1 4 0 7 4 6 2-.5 3-3 3-5V7m5-2c3 0 5 4 6 8 1 4 0 7-4 6-2-.5-3-3-3-5V7"/>',
+  co2: '<path d="M6 17a4 4 0 1 1 0-8 6 6 0 0 1 11-1 4.5 4.5 0 0 1 1 9h-3M10 20h4m-2-2v-3"/>'
+};
+
+function clinicIcon(name) {
+  const size = name === 'brand' ? 48 : 24;
+  const style = name === 'paw' ? 'fill="currentColor"' : 'fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"';
+  return `<svg class="clinic-icon" viewBox="0 0 ${size} ${size}" ${style} aria-hidden="true" focusable="false">${clinicIcons[name]}</svg>`;
+}
+
 function clinicShell(content) {
   const pages = [
-    ['home', 'Karty pacjentów'],
-    ['dawki', 'Obliczanie dawek leków'],
-    ['biblioteka', 'Biblioteka leków'],
-    ['monitor', 'Monitor zabiegu'],
-    ['ustawienia', 'Ustawienia']
+    ['home', 'Karty pacjentów', 'folder'],
+    ['dawki', 'Obliczanie dawek leków', 'calculator'],
+    ['biblioteka', 'Biblioteka leków', 'book'],
+    ['monitor', 'Monitor zabiegu', 'monitor'],
+    ['ustawienia', 'Ustawienia', 'settings']
   ];
   const active = ['plan', 'printPreview'].includes(state.currentPage) ? 'home' : state.currentPage;
 
   return `
-    <div class="clinic-shell">
+    <div class="clinic-shell" data-page="${state.currentPage}">
       <header class="clinic-header no-print">
         <button class="clinic-brand" type="button" data-nav="home">
-          <span class="clinic-mark" aria-hidden="true">+</span>
-          <span>${APP_NAME}<small>Weterynaria</small></span>
+          <span class="clinic-brand-mark">${clinicIcon('brand')}</span>
+          <span>${APP_NAME}<small>Weterynaryjna aplikacja do anestezjologii</small></span>
         </button>
-        <button class="clinic-theme" type="button" id="openAppearance">${escapeHtml(getThemeLabel())}</button>
+        <div class="clinic-header-actions">
+          <button class="clinic-theme" type="button" id="openAppearance">${clinicIcon('settings')}<span>${escapeHtml(getThemeLabel())}</span></button>
+          <button class="clinic-menu-toggle" type="button" id="clinicMenuToggle" aria-controls="clinicNav" aria-expanded="false" aria-label="Menu główne">${clinicIcon('menu')}</button>
+        </div>
       </header>
-      <nav class="clinic-nav no-print" aria-label="Główne menu">
-        ${pages.map(([page, label]) => `
-          <button type="button" data-nav="${page}" ${active === page ? 'aria-current="page"' : ''}>${label}</button>
+      <nav class="clinic-nav no-print" id="clinicNav" aria-label="Główne menu">
+        <p class="clinic-nav-title">Panel kliniki</p>
+        ${pages.map(([page, label, icon]) => `
+          <button type="button" data-nav="${page}" ${active === page ? 'aria-current="page"' : ''}>${clinicIcon(icon)}<span>${label}</span></button>
         `).join('')}
         <button type="button" data-nav="podziekowania" class="clinic-credits" ${active === 'podziekowania' ? 'aria-current="page"' : ''}>Podziękowania</button>
       </nav>
@@ -1314,30 +1352,68 @@ function clinicShell(content) {
   `;
 }
 
+const patientStatuses = {
+  completed: 'Zakończony',
+  active: 'W trakcie',
+  saved: 'Zapisano'
+};
+
+function patientStatus(data) {
+  if (data.surgeryEnd) return 'completed';
+  if (data.surgeryStart) return 'active';
+  return 'saved';
+}
+
+function displayCardDate(value) {
+  const date = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value || '');
+  return date ? `${date[3]}.${date[2]}.${date[1]}` : value || '—';
+}
+
+function displayPatientWeight(value) {
+  if (!hasEntryValue(value)) return '—';
+  const mass = parseMass(value);
+  return `${mass > 0 ? String(mass).replace('.', ',') : value} kg`;
+}
+
 function patientRecordsMarkup() {
-  const records = filtered();
+  const records = filtered().filter(record => !state.patientStatusFilter || patientStatus(record.data) === state.patientStatusFilter);
   if (!records.length) {
-    return `<p class="small">${state.query.trim() ? 'Brak kart pasujących do wyszukiwania.' : 'Brak zapisanych kart.'}</p>`;
+    return `<p class="patient-empty small">${state.query.trim() || state.patientStatusFilter ? 'Brak kart pasujących do filtrów.' : 'Brak zapisanych kart.'}</p>`;
   }
 
   return `
     <div class="patient-list">
-      <div class="patient-list-head" aria-hidden="true"><span>Pacjent</span><span>Zabieg</span><span>Karta</span><span></span></div>
+      <div class="patient-list-head" aria-hidden="true"><span>Pacjent</span><span>Gatunek</span><span>Masa ciała</span><span>Data karty</span><span>Status</span><span></span></div>
       ${records.map((record) => {
         const data = record.data;
         const id = escapeHtml(record.id);
         const name = escapeHtml(data.animalName || 'Pacjent');
-        const details = [displaySpecies(data.species), data.weight && `${data.weight} kg`].filter(Boolean).join(' · ');
+        const species = escapeHtml(displaySpecies(data.species) || '—');
+        const weight = escapeHtml(displayPatientWeight(data.weight));
+        const status = patientStatus(data);
         return `
           <article class="patient-list-row ${state.selectedId === record.id ? 'is-current' : ''}">
-            <div><button type="button" class="patient-open" data-open="${id}" aria-label="Otwórz kartę: ${name}">${name}</button>
-            ${details ? `<div class="small">${escapeHtml(details)}</div>` : ''}</div>
-            <div>${escapeHtml(data.procedureAsa || '—')}</div>
-            <div class="small"><span class="record-state">Zapisano</span>${data.visitDate ? `<div>${escapeHtml(data.visitDate)}</div>` : ''}
-            ${data.ownerName ? `<div>${escapeHtml(data.ownerName)}</div>` : ''}
-            ${record.createdByName ? `<div>Autor: ${escapeHtml(record.createdByName)}</div>` : ''}
-            ${record.updatedByName ? `<div>Edycja: ${escapeHtml(record.updatedByName)}</div>` : ''}</div>
-            <button class="btn secondary patient-delete" type="button" data-del="${id}" aria-label="Usuń kartę: ${name}">Usuń</button>
+            <div class="patient-name-cell">
+              <button type="button" class="patient-open" data-open="${id}" aria-label="Otwórz kartę: ${name}">
+                <span class="patient-paw">${clinicIcon('paw')}</span><span>${name}</span>
+              </button>
+              ${data.procedureAsa ? `<div class="small patient-procedure">${escapeHtml(data.procedureAsa)}</div>` : ''}
+              <div class="patient-mobile-meta small">${species}${weight === '—' ? '' : ` · ${weight}`}</div>
+            </div>
+            <div class="patient-species">${species}</div>
+            <div class="patient-weight">${weight}</div>
+            <div class="patient-date">${escapeHtml(displayCardDate(data.visitDate))}</div>
+            <div class="patient-status"><span class="record-state status-${status}">${patientStatuses[status]}</span></div>
+            <details class="patient-options">
+              <summary aria-label="Szczegóły i akcje: ${name}">${clinicIcon('more')}</summary>
+              <div class="patient-options-panel">
+                ${data.visitDate ? `<div>Data karty: ${escapeHtml(displayCardDate(data.visitDate))}</div>` : ''}
+                ${data.ownerName ? `<div>Właściciel: ${escapeHtml(data.ownerName)}</div>` : ''}
+                ${record.createdByName ? `<div>Autor: ${escapeHtml(record.createdByName)}</div>` : ''}
+                ${record.updatedByName ? `<div>Edycja: ${escapeHtml(record.updatedByName)}</div>` : ''}
+                <button class="btn secondary patient-delete" type="button" data-del="${id}" aria-label="Usuń kartę: ${name}">Usuń kartę</button>
+              </div>
+            </details>
           </article>
         `;
       }).join('')}
@@ -1351,12 +1427,22 @@ function patientBrowserMarkup() {
       <div class="card-body">
         <div class="clinic-title">
           <div><h1>Karty pacjentów</h1><p class="small">${escapeHtml(state.syncStatus || (state.user ? 'Online' : 'Tryb lokalny'))}</p></div>
-          <button class="btn primary-btn" type="button" id="newBtn">+ Nowa karta</button>
+          <button class="btn primary-btn clinic-icon-button" type="button" id="newBtn">${clinicIcon('plus')} Nowa karta</button>
         </div>
-        <label class="label" for="searchInput">Szukaj karty</label>
-        <input id="searchInput" type="search" placeholder="Pacjent, właściciel lub zabieg" value="${escapeHtml(state.query)}">
+        <div class="patient-filters">
+          <label class="patient-search">
+            ${clinicIcon('search')}
+            <input id="searchInput" type="search" aria-label="Szukaj karty" placeholder="Pacjent, gatunek, właściciel lub zabieg" value="${escapeHtml(state.query)}">
+          </label>
+          <select id="patientStatusFilter" aria-label="Filtr statusu kart">
+            <option value="">Wszystkie karty</option>
+            ${Object.entries(patientStatuses).map(([value, label]) => `
+              <option value="${value}" ${state.patientStatusFilter === value ? 'selected' : ''}>${label}</option>
+            `).join('')}
+          </select>
+        </div>
         <div id="patientResults">${patientRecordsMarkup()}</div>
-        <details class="clinic-details">
+        <details class="clinic-details patient-utilities">
           <summary>Kopie zapasowe i tryb lokalny</summary>
           <div class="clinic-actions">
             <button class="btn secondary" id="exportBtn" type="button">Eksport kopii</button>
@@ -1376,15 +1462,24 @@ function displaySpecies(species) {
 
 function patientIdentityMarkup(title = 'Karta zabiegu') {
   const form = state.form;
-  const details = [displaySpecies(form.species), form.weight && `${form.weight} kg`].filter(Boolean).join(' · ');
+  const details = [
+    displaySpecies(form.species),
+    hasEntryValue(form.weight) ? displayPatientWeight(form.weight) : ''
+  ].filter(Boolean).join(' · ');
   const name = escapeHtml(form.animalName || 'Nowy pacjent');
   return `
     <div class="patient-identity">
-      <div><p class="small">${title}${form.procedureAsa ? ` · ${escapeHtml(form.procedureAsa)}` : ''}</p>
-        <h1>${name}</h1>
-        <p>${escapeHtml(details || 'Uzupełnij gatunek i masę na karcie.')}</p>
+      <div class="patient-identity-name">
+        <span class="patient-paw">${clinicIcon('paw')}</span>
+        <div><p class="small identity-title">${title}${form.procedureAsa ? ` · ${escapeHtml(form.procedureAsa)}` : ''}</p>
+          <h1>${name}</h1>
+          <p>${escapeHtml(details || 'Uzupełnij gatunek i masę na karcie.')}</p>
+        </div>
       </div>
-      <span class="record-state" id="cardState">${state.selectedId && !loadDraft() ? 'Zapisano' : 'Karta robocza'}</span>
+      <div class="patient-identity-meta">
+        ${form.visitDate ? `<span class="small">Data karty: ${escapeHtml(displayCardDate(form.visitDate))}</span>` : ''}
+        <span class="record-state" id="cardState">${state.selectedId && !loadDraft() ? 'Zapisano' : 'Karta robocza'}</span>
+      </div>
     </div>
   `;
 }
@@ -1394,8 +1489,11 @@ function homeView() {
   return `
     <div class="app clinic-home">
       <div class="home-current card card-body">
-        <div><div class="small">Aktualna karta</div><h2>${escapeHtml(form.animalName || 'Nowy pacjent')}</h2>
-          ${form.species ? `<div class="small">${escapeHtml(displaySpecies(form.species))}${form.weight ? ` · ${escapeHtml(form.weight)} kg` : ''}</div>` : ''}
+        <div class="patient-identity-name">
+          <span class="patient-paw">${clinicIcon('paw')}</span>
+          <div><div class="small">Aktualna karta</div><h2>${escapeHtml(form.animalName || 'Nowy pacjent')}</h2>
+            ${form.species ? `<div class="small">${escapeHtml(displaySpecies(form.species))}${form.weight ? ` · ${escapeHtml(displayPatientWeight(form.weight))}` : ''}</div>` : ''}
+          </div>
         </div>
         <button class="btn secondary" type="button" data-nav="plan">Otwórz kartę</button>
       </div>
@@ -1843,9 +1941,19 @@ function filtered() {
   );
 }
 
+const baselineFields = [
+  ['baselineHr', 'Tętno', 'ud./min', '1'],
+  ['baselineRespiration', 'Częstość oddechów', 'oddechów/min', '1'],
+  ['baselineTemp', 'Temperatura', '°C', 'any']
+];
+
 function mainView() {
   return `
-    <div class="app">
+    <div class="app clinic-card-page">
+      <div class="mobile-card-heading no-print">
+        <button type="button" data-nav="home" aria-label="Wróć do kart pacjentów">${clinicIcon('back')}</button>
+        <span>Karta zabiegu</span>
+      </div>
       <div class="layout clinic-plan-layout">
         ${patientBrowserMarkup()}
 
@@ -1860,11 +1968,45 @@ function mainView() {
               </nav>
               <div class="clinic-actions plan-toolbar no-print">
                 <button class="btn primary-btn" id="saveBtn">Zapisz</button>
-                <button class="btn secondary" id="printBtn">Podgląd wydruku</button>
-                <button class="btn secondary" id="samePatientBtn">Nowa karta tego pacjenta</button>
+                <button type="button" class="btn secondary clinic-icon-button plan-options-toggle" id="planOptionsToggle" aria-expanded="false" aria-controls="planOptions">${clinicIcon('more')} Opcje karty</button>
+                <div class="plan-secondary-actions" id="planOptions">
+                  <button class="btn secondary" id="printBtn">Podgląd wydruku</button>
+                  <button class="btn secondary" id="samePatientBtn">Nowa karta tego pacjenta</button>
+                </div>
               </div>
               <section id="plan-prep" class="plan-section" ${state.planSection === 'prep' ? '' : 'hidden'} aria-label="Przed zabiegiem">
-                <div class="clinic-actions"><button class="btn secondary" id="doseFromCard" type="button">Obliczanie dawek leków</button></div>
+                <div class="stage-title">${clinicIcon('clipboard')}<h2>Przed zabiegiem</h2></div>
+                <div class="stage-overview">
+                  <div class="grid g2">
+                    <div>
+                      <label class="label" for="procedureAsa">Rodzaj zabiegu</label>
+                      <input id="procedureAsa" data-field="procedureAsa" value="${escapeHtml(state.form.procedureAsa)}">
+                    </div>
+                    <div>
+                      <label class="label" for="asaClass">Klasyfikacja ASA</label>
+                      <select id="asaClass" data-field="asaClass">
+                        <option value="">Wybierz</option>
+                        ${['I', 'II', 'III', 'IV', 'V'].map(value => `<option value="${value}" ${state.form.asaClass === value ? 'selected' : ''}>ASA ${value}</option>`).join('')}
+                      </select>
+                    </div>
+                  </div>
+                  <label class="label" for="preAssessment">Ocena przedanestetyczna</label>
+                  <textarea id="preAssessment" data-field="preAssessment" rows="2">${escapeHtml(state.form.preAssessment || '')}</textarea>
+                </div>
+                <fieldset class="baseline-settings">
+                  <legend>${clinicIcon('pulse')} Parametry wyjściowe</legend>
+                  ${baselineFields.map(([key, label, unit, step]) => `
+                    <label class="baseline-field">
+                      <span>${label}</span>
+                      <input data-field="${key}" type="number" inputmode="${step === 'any' ? 'decimal' : 'numeric'}" step="${step}" value="${escapeHtml(state.form[key] || '')}" aria-label="${label} (${unit})">
+                      <span class="small">${unit}</span>
+                    </label>
+                  `).join('')}
+                </fieldset>
+                <div class="clinic-actions plan-shortcuts no-print">
+                  <button class="btn primary-btn clinic-icon-button" id="quickVitalEntry" type="button">${clinicIcon('plus')} Dodaj pomiar</button>
+                  <button class="btn secondary clinic-icon-button" id="doseFromCard" type="button">${clinicIcon('calculator')} Obliczanie dawek leków</button>
+                </div>
               <div class="grid g4">
                 <div>
                   <label class="label">Data karty</label>
@@ -1965,11 +2107,6 @@ function mainView() {
 
               <div class="space-16"></div>
 
-              <label class="label">Rodzaj zabiegu + ASA</label>
-              <input data-field="procedureAsa" value="${escapeHtml(state.form.procedureAsa)}">
-
-              <div class="space-16"></div>
-
               ${drugTable('Planowane leki', state.form.drugTable, false)}
 
               <div class="space-16"></div>
@@ -1995,7 +2132,8 @@ function mainView() {
 
               </section>
               <section id="plan-procedure" class="plan-section" ${state.planSection === 'procedure' ? '' : 'hidden'} aria-label="Przebieg zabiegu">
-                <div class="clinic-actions"><button class="btn secondary" type="button" id="planMonitor">Otwórz monitor</button></div>
+                <div class="stage-title">${clinicIcon('pulse')}<h2>Przebieg</h2></div>
+                <div class="clinic-actions"><button class="btn secondary clinic-icon-button" type="button" id="planMonitor">${clinicIcon('monitor')} Otwórz monitor</button></div>
                 ${procedureEntryMarkup()}
               <div class="space-16"></div>
 
@@ -2027,6 +2165,7 @@ function mainView() {
               ${vitalsTable()}
               </section>
               <section id="plan-recovery" class="plan-section" ${state.planSection === 'recovery' ? '' : 'hidden'} aria-label="Wybudzenie">
+                <div class="stage-title">${clinicIcon('clipboard')}<h2>Wybudzenie</h2></div>
                 <label class="label" for="recoveryNotes">Obserwacje i uwagi po znieczuleniu</label>
                 <textarea id="recoveryNotes" data-field="recoveryNotes">${escapeHtml(state.form.recoveryNotes || '')}</textarea>
               </section>
@@ -2126,14 +2265,16 @@ function monitorView() {
       </div>
       ${patientIdentityMarkup('Monitor zabiegu')}
       <section class="card card-body">
-        <h2>Ostatni pomiar</h2>
+        <div class="stage-title">${clinicIcon('monitor')}<h2>Ostatni pomiar</h2></div>
         ${latest ? `<p class="small">${escapeHtml(vitalTimeLabel(latest.time))}</p>` : ''}
         <div class="monitor-grid">
           ${vitalFields.map(([key, label, unit]) => {
             const value = latest?.[key];
+            const icon = { hr: 'pulse', spo2: 'lungs', etco2: 'co2' }[key];
             const level = hasEntryValue(value) ? getVitalAlertLevel(key, value) : '';
             return `
-              <div class="monitor-value ${level ? `monitor-${level}` : ''}">
+              <div class="monitor-value monitor-value-${key} ${level ? `monitor-${level}` : ''}">
+                ${icon ? clinicIcon(icon) : ''}
                 <span>${label}</span>
                 <strong>${hasEntryValue(value) ? escapeHtml(value) : '—'}</strong>
                 ${unit ? `<span class="small">${unit}</span>` : ''}
@@ -2145,7 +2286,7 @@ function monitorView() {
         ${procedureEntryMarkup()}
       </section>
       <section class="card card-body monitor-history">
-        <h2>Historia wpisów</h2>
+        <div class="stage-title">${clinicIcon('clipboard')}<h2>Historia wpisów</h2></div>
         <div class="grid g2">
           <div>
             <h3>Pomiary</h3>
@@ -2606,7 +2747,7 @@ function bind() {
         const pinInput = document.getElementById('pinInput');
         if (pinInput && pinInput.value === getPin()) {
           state.unlocked = true;
-          state.currentPage = 'home';
+          state.currentPage = initialClinicPage();
           render();
         } else {
           alert('Nieprawidlowy PIN.');
@@ -2619,6 +2760,13 @@ function bind() {
   document.querySelectorAll('[data-nav]').forEach((el) => {
     el.onclick = () => showClinicPage(el.dataset.nav);
   });
+
+  const menuToggle = document.getElementById('clinicMenuToggle');
+  if (menuToggle) menuToggle.onclick = () => {
+    const open = menuToggle.getAttribute('aria-expanded') !== 'true';
+    menuToggle.setAttribute('aria-expanded', String(open));
+    document.getElementById('clinicNav').classList.toggle('is-open', open);
+  };
 
   const appearance = document.getElementById('openAppearance');
   if (appearance) appearance.onclick = () => showClinicPage('ustawienia');
@@ -2642,6 +2790,21 @@ function bind() {
   document.querySelectorAll('[data-procedure-entry]').forEach(form => {
     form.onsubmit = addProcedureEntry;
   });
+
+  const quickVitalEntry = document.getElementById('quickVitalEntry');
+  if (quickVitalEntry) quickVitalEntry.onclick = () => {
+    document.querySelector('[data-plan-section="procedure"]').click();
+    const form = document.querySelector('[data-procedure-entry="vitals"]');
+    form.closest('details').open = true;
+    form.elements.time.focus();
+  };
+
+  const planOptionsToggle = document.getElementById('planOptionsToggle');
+  if (planOptionsToggle) planOptionsToggle.onclick = () => {
+    const open = planOptionsToggle.getAttribute('aria-expanded') !== 'true';
+    planOptionsToggle.setAttribute('aria-expanded', String(open));
+    document.getElementById('planOptions').classList.toggle('is-open', open);
+  };
 
   const planMonitor = document.getElementById('planMonitor');
   if (planMonitor) planMonitor.onclick = () => showClinicPage('monitor');
@@ -2980,6 +3143,11 @@ function bind() {
       state.query = search.value;
       patientResults.innerHTML = patientRecordsMarkup();
     };
+    const statusFilter = document.getElementById('patientStatusFilter');
+    statusFilter.onchange = () => {
+      state.patientStatusFilter = statusFilter.value;
+      patientResults.innerHTML = patientRecordsMarkup();
+    };
     patientResults.onclick = handlePatientAction;
   }
 
@@ -3033,6 +3201,11 @@ function bind() {
   if (pc) pc.onchange = (e) => setPin(e.target.value || defaultPin);
 }
 
+function initialClinicPage() {
+  const hasCard = state.selectedId || loadDraft();
+  return hasCard && window.matchMedia('(max-width: 640px)').matches ? 'plan' : 'home';
+}
+
 function showClinicPage(page) {
   state.currentPage = page;
   state.doseFromCard = false;
@@ -3042,7 +3215,7 @@ function showClinicPage(page) {
 }
 
 function updateThemeButton() {
-  const button = document.getElementById('openAppearance');
+  const button = document.querySelector('#openAppearance span');
   if (button) button.textContent = getThemeLabel();
 }
 
@@ -3318,7 +3491,7 @@ function renderPrintableCardMarkup(form) {
           <div style="border:1px solid #000;padding:6px;"><strong>Data:</strong><br>${escapeHtml(form.visitDate || '-')}</div>
           <div style="border:1px solid #000;padding:6px;"><strong>Pacjent:</strong><br>${escapeHtml(form.animalName || '-')}</div>
           <div style="border:1px solid #000;padding:6px;"><strong>Masa:</strong><br>${escapeHtml(form.weight || '-')} kg</div>
-          <div style="border:1px solid #000;padding:6px;"><strong>ASA / zabieg:</strong><br>${escapeHtml(form.procedureAsa || '-')}</div>
+          <div style="border:1px solid #000;padding:6px;"><strong>ASA / zabieg:</strong><br>${escapeHtml([form.asaClass && `ASA ${form.asaClass}`, form.procedureAsa].filter(Boolean).join(' · ') || '-')}</div>
         </div>
 
         <div style="border:1px solid #000;padding:7px;margin-bottom:8px;">
@@ -3332,6 +3505,15 @@ function renderPrintableCardMarkup(form) {
             <div><strong>Stan ogólny:</strong> ${escapeHtml(form.generalState || '-')}</div>
           </div>
         </div>
+
+        ${form.preAssessment || baselineFields.some(([key]) => hasEntryValue(form[key])) ? `
+          <div style="border:1px solid #000;padding:7px;margin-bottom:8px;">
+            <div style="font-weight:700;font-size:15px;margin-bottom:5px;">Ocena przedanestetyczna i parametry wyjściowe</div>
+            ${form.preAssessment ? `<div style="white-space:pre-wrap;">${escapeHtml(form.preAssessment)}</div>` : ''}
+            <div>${baselineFields.filter(([key]) => hasEntryValue(form[key]))
+              .map(([key, label, unit]) => `${label}: ${escapeHtml(form[key])} ${unit}`).join(' · ')}</div>
+          </div>
+        ` : ''}
 
         <div style="border:1px solid #000;padding:7px;margin-bottom:8px;">
           <div style="font-weight:700;font-size:15px;margin-bottom:5px;border-bottom:1px solid #000;">Wywiad i ocena pacjenta</div>
