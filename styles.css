@@ -1084,6 +1084,14 @@ textarea {
 .monitor-history li strong { min-width: 52px; color: var(--primary); font-variant-numeric: tabular-nums; }
 .clinic-shell :focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 
+@media (min-width: 961px) {
+  .clinic-shell { grid-template-columns: clamp(220px, 17vw, 248px) minmax(0, 1fr); }
+  .clinic-nav { gap: 7px; padding: 22px 14px; background: var(--surface-2); }
+  .clinic-nav button { padding: 12px 14px; min-height: 46px; font-size: 15px; }
+  .clinic-nav button:not([aria-current='page']):hover { background: var(--surface); }
+  .clinic-nav [aria-current='page'] { box-shadow: inset 3px 0 var(--primary); }
+}
+
 @media (max-width: 960px) {
   .clinic-shell { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto 1fr; }
   .clinic-nav { flex-direction: row; flex-wrap: wrap; gap: 3px; padding: 5px 10px; border-right: 0; border-bottom: 1px solid var(--border); }
