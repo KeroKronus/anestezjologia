@@ -379,6 +379,8 @@ let state = {
   doseSpecies: '',
   doseWeight: '',
   doseDrugName: '',
+  doseDrugQuery: '',
+  selectedDosePreset: null,
   doseMgKg: '',
   doseMgMl: '',
   doseMlPerKg: '',
@@ -719,7 +721,7 @@ function getPresetByNameAndSpecies(name, species) {
 }
 
 function getSelectedDrugPreset() {
-  return getPresetByNameAndSpecies(state.doseDrugName, state.doseSpecies || '');
+  return state.selectedDosePreset;
 }
 
 function getSelectedProtocol() {
@@ -938,60 +940,29 @@ function bindBreedSuggestionButtons() {
 }
 
 function getDrugSuggestions() {
-  const value = (state.doseDrugName || '').trim().toLowerCase();
-  const species = state.doseSpecies || '';
+  const query = state.doseDrugQuery.trim().toLocaleLowerCase('pl');
+  const species = state.doseSpecies;
 
-  let filtered = DRUG_PRESETS;
-
-  if (species) {
-    filtered = filtered.filter((drug) => drug.species === 'Oba' || drug.species === species);
-  }
-
-  if (!value) {
-    const unique = [];
-    const seen = new Set();
-
-    filtered.forEach((drug) => {
-      const key = `${drug.name}-${drug.species}`;
-      if (!seen.has(key)) {
-        seen.add(key);
-        unique.push(drug);
-      }
-    });
-
-    return unique.slice(0, 8);
-  }
-
-  const found = filtered.filter((drug) =>
-    [drug.name, drug.category, drug.species, drug.substance || '', drug.note].join(' ').toLowerCase().includes(value)
-  );
-
-  const unique = [];
-  const seen = new Set();
-
-  found.forEach((drug) => {
-    const key = `${drug.name}-${drug.species}`;
-    if (!seen.has(key)) {
-      seen.add(key);
-      unique.push(drug);
-    }
-  });
-
-  return unique.slice(0, 8);
+  return DRUG_PRESETS
+    .filter((drug) => !species || drug.species === species || drug.species === 'Oba')
+    .filter((drug) =>
+      [drug.name, drug.substance, drug.category].join(' ').toLocaleLowerCase('pl').includes(query)
+    )
+    .sort((first, second) => first.name.localeCompare(second.name, 'pl'));
 }
 
 function renderDrugSuggestionsMarkup() {
   const suggestions = getDrugSuggestions();
 
   return `
-    <div id="drugSuggestions" class="breed-suggestions">
+    <div id="drugSuggestions" class="breed-suggestions" tabindex="0" role="region" aria-label="Lista leków">
       ${suggestions
         .map(
           (drug) => `
         <button
           type="button"
           class="breed-suggestion-item"
-          data-drug-pick="${escapeHtml(drug.name)}"
+          data-drug-pick="${DRUG_PRESETS.indexOf(drug)}"
         >
           <strong>${escapeHtml(drug.name)}</strong><br>
           <span class="small">${escapeHtml(drug.species)} • ${escapeHtml(drug.category)} • ${escapeHtml(drug.route || '')}</span>
@@ -1015,7 +986,7 @@ function updateDrugSuggestions() {
     <button
       type="button"
       class="breed-suggestion-item"
-      data-drug-pick="${escapeHtml(drug.name)}"
+      data-drug-pick="${DRUG_PRESETS.indexOf(drug)}"
     >
       <strong>${escapeHtml(drug.name)}</strong><br>
       <span class="small">${escapeHtml(drug.species)} • ${escapeHtml(drug.category)} • ${escapeHtml(drug.route || '')}</span>
@@ -1028,6 +999,7 @@ function updateDrugSuggestions() {
 }
 
 function applyPresetToDoseFields(preset) {
+  state.selectedDosePreset = preset;
   state.doseDrugName = preset.name;
   state.doseMgMl = preset.mgMl !== '' ? String(preset.mgMl) : '';
   state.doseMlPerKg = preset.mlPerKg !== '' ? String(preset.mlPerKg) : '';
@@ -1046,10 +1018,7 @@ function applyPresetToDoseFields(preset) {
 function bindDrugSuggestionButtons() {
   document.querySelectorAll('[data-drug-pick]').forEach((el) => {
     el.onclick = () => {
-      const pickedName = el.dataset.drugPick;
-      const preset =
-        getDrugSuggestions().find((drug) => drug.name === pickedName) ||
-        getPresetByNameAndSpecies(pickedName, state.doseSpecies || '');
+      const preset = DRUG_PRESETS[Number(el.dataset.drugPick)];
 
       if (!preset) return;
 
@@ -1333,7 +1302,7 @@ function homeView() {
 
         <button class="menu-card menu-card-dose" data-nav="dawki">
           <div class="menu-icon">💉</div>
-          <div class="menu-title">2. Kalkulator zabiegowy</div>
+          <div class="menu-title">Obliczanie dawek leków</div>
           <div class="menu-sub">Dawki, premedykacja i gotowe protokoły</div>
         </button>
 
@@ -1384,7 +1353,7 @@ function dosesView() {
 
       <div class="card">
         <div class="card-body">
-          <h3>Liczba dawek</h3>
+          <h3>Obliczanie dawek leków</h3>
 
           <div class="toolbar">
             <button class="btn ${state.doseTab === 'calculator' ? 'primary-btn' : 'secondary'}" id="doseTabCalculator">
@@ -1419,7 +1388,9 @@ function dosesView() {
             <div class="grid g2">
               <div class="breed-field">
                 <label class="label">Nazwa leku</label>
-                <input id="doseDrugName" value="${escapeHtml(state.doseDrugName || '')}" placeholder="Np. ketamina" autocomplete="off">
+                <input id="doseDrugName" value="${escapeHtml(state.doseDrugName || '')}" placeholder="Wpisz własną nazwę lub wybierz z listy" autocomplete="off">
+                <label class="label" for="doseDrugSearch">Szukaj na liście leków</label>
+                <input id="doseDrugSearch" type="search" value="${escapeHtml(state.doseDrugQuery)}" autocomplete="off">
                 ${renderDrugSuggestionsMarkup()}
               </div>
 
@@ -2519,10 +2490,15 @@ function bind() {
     doseSpecies.onchange = (e) => {
       state.doseSpecies = e.target.value;
 
-      const preset = getSelectedDrugPreset();
+      const selected = getSelectedDrugPreset();
+      const preset = selected && (!state.doseSpecies || selected.species === state.doseSpecies || selected.species === 'Oba') ? selected : null;
       if (preset) {
         applyPresetToDoseFields(preset);
       } else {
+        if (selected) state.doseDrugName = '';
+        state.selectedDosePreset = null;
+        state.doseMgMl = '';
+        state.doseMlPerKg = '';
         state.doseMgKgChoice = '';
         state.doseMgKg = '';
         state.doseRoute = '';
@@ -2541,18 +2517,34 @@ function bind() {
     };
   }
 
+  const doseDrugSearch = document.getElementById('doseDrugSearch');
+  if (doseDrugSearch) {
+    doseDrugSearch.oninput = (e) => {
+      state.doseDrugQuery = e.target.value;
+      updateDrugSuggestions();
+      document.getElementById('drugSuggestions').scrollTop = 0;
+    };
+  }
+
   const doseDrugName = document.getElementById('doseDrugName');
   if (doseDrugName) {
     doseDrugName.oninput = (e) => {
       state.doseDrugName = e.target.value;
+      if (!state.selectedDosePreset) return;
 
-      const preset = getSelectedDrugPreset();
+      state.selectedDosePreset = null;
+      state.doseMgKgChoice = '';
+      state.doseMgKg = '';
+      state.doseMgMl = '';
+      state.doseMlPerKg = '';
+      state.doseRoute = '';
+      state.dosePresetNote = '';
 
-      if (!preset || !Array.isArray(preset.mgKgOptions) || !preset.mgKgOptions.length) {
-        state.doseMgKgChoice = '';
-      }
-
-      updateDrugSuggestions();
+      const cursor = e.target.selectionStart;
+      render();
+      const nameInput = document.getElementById('doseDrugName');
+      nameInput.focus();
+      nameInput.setSelectionRange(cursor, cursor);
     };
   }
 
