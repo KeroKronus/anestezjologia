@@ -483,6 +483,10 @@ function canManageCards() {
   return state.user ? canReadStaffCards() && state.profile.role === 'admin' : !hasCloudConfig();
 }
 
+function canManageStaff() {
+  return canReadStaffCards() && state.profile.role === 'admin';
+}
+
 function hasCloudConfig() {
   const { url, anonKey } = loadSupabaseConfig();
   return Boolean(url && anonKey);
@@ -1305,6 +1309,7 @@ function render() {
         biblioteka: libraryView,
         monitor: monitorView,
         ustawienia: settingsView,
+        personel: canManageStaff() ? staffPanelView : homeView,
         podziekowania: thanksView,
         printPreview: printPreviewView
       };
@@ -1419,20 +1424,24 @@ function clinicIcon(name) {
   return `<svg class="clinic-icon" viewBox="0 0 ${size} ${size}" ${style} aria-hidden="true" focusable="false">${clinicIcons[name]}</svg>`;
 }
 
-const clinicPages = [
-  ['home', 'Karty pacjentów', 'folder'],
-  ['dawki', 'Obliczanie dawek leków', 'calculator'],
-  ['biblioteka', 'Biblioteka leków', 'book'],
-  ['monitor', 'Monitor zabiegu', 'monitor'],
-  ['ustawienia', 'Ustawienia', 'settings']
-];
+function clinicPages() {
+  const pages = [
+    ['home', 'Karty pacjentów', 'folder'],
+    ['dawki', 'Obliczanie dawek leków', 'calculator'],
+    ['biblioteka', 'Biblioteka leków', 'book'],
+    ['monitor', 'Monitor zabiegu', 'monitor'],
+    ['ustawienia', 'Ustawienia', 'settings']
+  ];
+  if (canManageStaff()) pages.push(['personel', 'Personel', 'clipboard']);
+  return pages;
+}
 
 function clinicLauncherView() {
   return `
     <div class="app clinic-launcher">
       <h1>Wybierz moduł</h1>
       <nav class="clinic-launcher-grid" aria-label="Moduły aplikacji">
-        ${[...clinicPages, ['podziekowania', 'Podziękowania', 'paw']].map(([page, label, icon]) => `
+        ${[...clinicPages(), ['podziekowania', 'Podziękowania', 'paw']].map(([page, label, icon]) => `
           <button type="button" class="clinic-launcher-button" data-nav="${page}">
             <span class="clinic-launcher-icon">${clinicIcon(icon)}</span>
             <span>${label}</span>
@@ -1461,7 +1470,7 @@ function clinicShell(content) {
       </header>
       ${launcher ? '' : `<nav class="clinic-nav no-print" id="clinicNav" aria-label="Główne menu">
         <p class="clinic-nav-title">Panel kliniki</p>
-        ${clinicPages.map(([page, label, icon]) => `
+        ${clinicPages().map(([page, label, icon]) => `
           <button type="button" data-nav="${page}" ${active === page ? 'aria-current="page"' : ''}>${clinicIcon(icon)}<span>${label}</span></button>
         `).join('')}
         <button type="button" data-nav="podziekowania" class="clinic-credits" ${active === 'podziekowania' ? 'aria-current="page"' : ''}>Podziękowania</button>
@@ -1943,6 +1952,138 @@ function libraryView() {
       </div>
     </div>
   `;
+}
+
+const staffRoleLabels = {
+  oczekuje: 'Oczekuje',
+  podglad: 'Podgląd',
+  pracownik: 'Pracownik',
+  admin: 'Administrator'
+};
+
+function staffPanelView() {
+  return `
+    <div class="app">
+      <section class="card card-body" id="staffPanel">
+        <div class="clinic-title">
+          <h1>Personel</h1>
+          <button type="button" class="btn secondary" id="refreshStaff">Odśwież listę</button>
+        </div>
+        <p class="small">Wybór roli zapisuje się od razu. Nowe profile mają status „Oczekuje”.</p>
+        <p id="staffPanelStatus" role="status"></p>
+        <div id="staffList"></div>
+      </section>
+    </div>
+  `;
+}
+
+function staffListMarkup(members) {
+  if (!members.length) return '<p class="small">Brak profili personelu.</p>';
+  return members.map((member) => {
+    const id = escapeHtml(member.id);
+    const name = escapeHtml(member.full_name || member.email || 'Profil bez nazwy');
+    const identity = member.email ? escapeHtml(member.email) : id;
+    const ownProfile = member.id === state.user.id;
+    return `
+      <div class="staff-row">
+        <div>
+          <strong>${name}</strong>
+          <div class="small">${identity}${ownProfile ? ' · Twoje konto' : ''}</div>
+        </div>
+        <label class="staff-role">
+          <span class="label">Rola</span>
+          <select data-staff-role="${id}" data-saved-role="${escapeHtml(member.role)}" aria-label="Rola: ${name}, ${identity}" ${ownProfile ? 'disabled' : ''}>
+            ${Object.entries(staffRoleLabels).map(([role, label]) => `
+              <option value="${role}" ${member.role === role ? 'selected' : ''}>${label}</option>
+            `).join('')}
+          </select>
+        </label>
+        <p class="staff-feedback small" role="status"></p>
+      </div>
+    `;
+  }).join('');
+}
+
+function bindStaffPanel() {
+  const panel = document.getElementById('staffPanel');
+  if (!panel || !canManageStaff()) return;
+
+  const client = getSupabaseClient();
+  const list = panel.querySelector('#staffList');
+  const status = panel.querySelector('#staffPanelStatus');
+  const refresh = panel.querySelector('#refreshStaff');
+  const userId = state.user.id;
+  const isCurrent = () => panel.isConnected && state.user?.id === userId && canManageStaff();
+  let pendingUpdates = 0;
+
+  async function load() {
+    if (!client) {
+      status.textContent = 'Brak połączenia z bazą.';
+      return;
+    }
+    refresh.disabled = true;
+    status.textContent = 'Wczytywanie listy…';
+    list.replaceChildren();
+    try {
+      const { data, error } = await client.rpc('list_clinic_staff');
+      if (!isCurrent()) return;
+      if (error) {
+        status.textContent = error.code === 'PGRST202'
+          ? 'Panel wymaga aktualizacji skryptu w Supabase.'
+          : 'Nie udało się wczytać listy personelu.';
+        return;
+      }
+      list.innerHTML = staffListMarkup(data || []);
+      status.textContent = '';
+    } catch {
+      if (isCurrent()) status.textContent = 'Nie udało się połączyć z bazą.';
+    } finally {
+      if (isCurrent()) refresh.disabled = false;
+    }
+  }
+
+  list.onchange = async (event) => {
+    const select = event.target.closest('[data-staff-role]');
+    if (!select || select.disabled || !client || !isCurrent()) return;
+    const previousRole = select.dataset.savedRole;
+    const newRole = select.value;
+    if (newRole === previousRole) return;
+    const feedback = select.closest('.staff-row').querySelector('.staff-feedback');
+    select.disabled = true;
+    pendingUpdates++;
+    refresh.disabled = true;
+    feedback.textContent = 'Zapisywanie…';
+    try {
+      const { data, error } = await client.rpc('set_clinic_staff_role', {
+        target_id: select.dataset.staffRole,
+        expected_role: previousRole,
+        new_role: newRole
+      });
+      if (!isCurrent()) return;
+      if (error || data !== newRole) {
+        select.value = previousRole;
+        feedback.textContent = error?.code === '40001'
+          ? 'Ktoś zmienił tę rolę. Odśwież listę.'
+          : 'Nie udało się zapisać roli. Odśwież listę i spróbuj ponownie.';
+        return;
+      }
+      select.dataset.savedRole = newRole;
+      feedback.textContent = 'Zapisano w Supabase.';
+    } catch {
+      if (!isCurrent()) return;
+      select.value = previousRole;
+      feedback.textContent = 'Brak potwierdzenia zapisu. Odśwież listę.';
+    } finally {
+      pendingUpdates--;
+      if (isCurrent()) {
+        select.disabled = false;
+        refresh.disabled = pendingUpdates > 0;
+      }
+    }
+  };
+
+  refresh.onclick = load;
+  load();
 }
 
 function settingsView() {
@@ -2937,6 +3078,8 @@ function bind() {
     document.getElementById('clinicNav').classList.toggle('is-open', open);
   };
 
+  bindStaffPanel();
+
   const appearance = document.getElementById('openAppearance');
   if (appearance) appearance.onclick = () => showClinicPage('ustawienia');
 
@@ -3377,7 +3520,7 @@ function initialClinicPage({ afterLogin = false } = {}) {
 }
 
 function showClinicPage(page) {
-  state.currentPage = page;
+  state.currentPage = page === 'personel' && !canManageStaff() ? 'home' : page;
   state.doseFromCard = false;
   state.entryMessage = '';
   render();

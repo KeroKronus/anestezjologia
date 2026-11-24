@@ -1634,3 +1634,20 @@ body[data-theme='dark'][data-accent='teal'] {
 
   .stacked-procedure-table .procedure-empty-row > td { grid-column: 1 / -1; }
 }
+
+.staff-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(140px, 230px);
+  align-items: center;
+  gap: 4px 16px;
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+}
+
+.staff-role { min-width: 0; }
+.staff-row .staff-feedback { grid-column: 1 / -1; }
+.staff-feedback:empty { display: none; }
+
+@media (max-width: 520px) {
+  .staff-row { grid-template-columns: minmax(0, 1fr); }
+}

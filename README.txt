@@ -32,6 +32,7 @@ polityki RLS, jeśli były dodawane ręcznie poza skryptem w repozytorium.
 Po sprawdzeniu na bazie testowej uruchom supabase_setup.sql w SQL Editor
 w odpowiednim projekcie i wdróż wersję aplikacji obsługującą nowe role.
 Nowy użytkownik loguje się po potwierdzeniu e-maila. Przy pierwszym logowaniu
-aplikacja tworzy profil w stanie „oczekuje”. Opiekun projektu odnajduje profil
-po UUID konta z Authentication → Users i ustawia rolę w Table Editor → profiles.
-Zaakceptowana osoba może kliknąć „Sprawdź ponownie” na ekranie dostępu.
+aplikacja tworzy profil w stanie „oczekuje”. Administrator otwiera moduł Personel i wybiera rolę przy właściwym adresie
+e-mail. Zmiana zapisuje się od razu w Supabase. Własną rolą może zarządzać
+opiekun projektu w panelu Supabase. Zaakceptowana osoba może kliknąć
+„Sprawdź ponownie” na ekranie dostępu.
