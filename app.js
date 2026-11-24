@@ -303,17 +303,6 @@ const PROTOCOL_PRESETS = [
   { id: 'butorphanol-midazolam', name: 'Butorfanol + Midazolam', short: 'Badanie diagnostyczne', description: 'Spokojniejsze badanie diagnostyczne.', species: 'Oba', target: 'Premedykacja', drugs: [{ name: 'Butorfanol', route: 'IM' }, { name: 'Midazolam', route: 'IM' }] }
 ];
 
-const vitalsTemplate = () =>
-  [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60].map((t) => ({
-    time: String(t),
-    hr: '',
-    spo2: '',
-    etco2: '',
-    temp: '',
-    pressure: '',
-    mac: ''
-  }));
-
 const drugRows = (n = 6) =>
   Array.from({ length: n }, () => ({
     name: '',
@@ -363,7 +352,7 @@ const blankForm = () => ({
   recoveryNotes: '',
   drugTable: drugRows(),
   intraopDrugs: intraRows(),
-  vitals: vitalsTemplate(),
+  vitals: [],
   createdAt: '',
   updatedAt: ''
 });
@@ -2055,7 +2044,7 @@ function procedureEntryMarkup() {
       <details class="clinic-details">
         <summary>+ Dodaj pomiar</summary>
         <form data-procedure-entry="vitals">
-          <label class="clinic-field">Czas od rozpoczęcia (min)<input name="time" type="number" min="0" step="1" inputmode="numeric" required></label>
+          <label class="clinic-field">Godzina pomiaru<input name="time" type="time" required></label>
           <div class="entry-grid">
             ${vitalFields.map(([key, label, unit]) => `
               <label class="clinic-field">${label}${unit ? ` (${unit})` : ''}<input name="${key}" type="number" step="any" inputmode="decimal"></label>
@@ -2091,10 +2080,32 @@ function hasEntryValue(value) {
   return String(value ?? '').trim() !== '';
 }
 
+function clockMinutes(value) {
+  if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value)) return null;
+  const [hours, minutes] = value.split(':').map(Number);
+  return hours * 60 + minutes;
+}
+
+function vitalTimeLabel(value) {
+  if (!hasEntryValue(value)) return '—';
+  return clockMinutes(value) === null ? `${value} min` : value;
+}
+
+function orderedVitals(rows, surgeryStart) {
+  const start = clockMinutes(surgeryStart);
+  const sortTime = (value) => {
+    const minutes = clockMinutes(value);
+    if (minutes === null) return Number(value);
+    return start === null ? 1440 + minutes : (minutes - start + 1440) % 1440;
+  };
+  return rows
+    .map((row, index) => ({ row, index }))
+    .filter(({ row }) => hasVitalValues(row))
+    .sort((first, second) => sortTime(first.row.time) - sortTime(second.row.time));
+}
+
 function monitorView() {
-  const measurements = state.form.vitals
-    .filter(hasVitalValues)
-    .sort((first, second) => Number(second.time) - Number(first.time));
+  const measurements = orderedVitals(state.form.vitals, state.form.surgeryStart).reverse().map(({ row }) => row);
   const latest = measurements[0];
   const doses = state.form.intraopDrugs.filter((row) => Object.values(row).some(hasEntryValue));
 
@@ -2107,7 +2118,7 @@ function monitorView() {
       ${patientIdentityMarkup('Monitor zabiegu')}
       <section class="card card-body">
         <h2>Ostatni pomiar</h2>
-        ${latest ? `<p class="small">${escapeHtml(latest.time || '0')} min od rozpoczęcia</p>` : ''}
+        ${latest ? `<p class="small">${escapeHtml(vitalTimeLabel(latest.time))}</p>` : ''}
         <div class="monitor-grid">
           ${vitalFields.map(([key, label, unit]) => {
             const value = latest?.[key];
@@ -2130,7 +2141,7 @@ function monitorView() {
           <div>
             <h3>Pomiary</h3>
             ${measurements.length ? `<ul>${measurements.map(row => `
-              <li><strong>${escapeHtml(row.time || '0')} min</strong><span>${vitalFields
+              <li><strong>${escapeHtml(vitalTimeLabel(row.time))}</strong><span>${vitalFields
                 .filter(([key]) => hasEntryValue(row[key]))
                 .map(([key, label, unit]) => `${label} ${escapeHtml(row[key])}${unit ? ` ${unit}` : ''}`)
                 .join(' · ')}</span></li>
@@ -2157,25 +2168,17 @@ function addProcedureEntry(event) {
   error.hidden = true;
 
   if (form.dataset.procedureEntry === 'vitals') {
-    const minute = Number(entry.time);
-    if (!entry.time || !Number.isSafeInteger(minute) || minute < 0 || !hasVitalValues(entry)) {
-      error.textContent = 'Wpisz czas w minutach i co najmniej jeden parametr.';
+    if (clockMinutes(entry.time) === null || !hasVitalValues(entry)) {
+      error.textContent = 'Wpisz godzinę i co najmniej jeden parametr.';
       error.hidden = false;
       return;
     }
-    entry.time = String(minute);
-    const existing = state.form.vitals.find(row => Number(row.time) === minute);
-    if (existing && hasVitalValues(existing)) {
-      error.textContent = 'Dla tej minuty jest już pomiar. Możesz go edytować w tabeli w zakładce Przebieg.';
+    if (state.form.vitals.some(row => row.time === entry.time && hasVitalValues(row))) {
+      error.textContent = 'O tej godzinie jest już pomiar. Możesz go edytować w tabeli w zakładce Przebieg.';
       error.hidden = false;
       return;
     }
-    if (existing) {
-      Object.assign(existing, entry);
-    } else {
-      state.form.vitals.push(entry);
-      state.form.vitals.sort((first, second) => Number(first.time) - Number(second.time));
-    }
+    state.form.vitals.push(entry);
     state.entryMessage = 'Dodano pomiar do szkicu karty.';
   } else {
     if (!entry.name || !entry.dose || !entry.hour) {
@@ -2348,7 +2351,7 @@ function getAllVitalAlerts() {
   const alerts = [];
 
   state.form.vitals.forEach((row, index) => {
-    const timeLabel = row.time ? `${row.time} min` : `wiersz ${index + 1}`;
+    const timeLabel = hasEntryValue(row.time) ? vitalTimeLabel(row.time) : `wiersz ${index + 1}`;
 
     ['hr', 'spo2', 'etco2', 'temp'].forEach((key) => {
       const level = getVitalAlertLevel(key, row[key]);
@@ -2377,7 +2380,7 @@ function vitalsTable() {
           <table class="data-table compact-table vitals-table">
             <thead>
               <tr>
-                <th>Czas</th>
+                <th>Godzina / czas</th>
                 <th>HR</th>
                 <th>SpO2</th>
                 <th>EtCO2</th>
@@ -2387,11 +2390,11 @@ function vitalsTable() {
               </tr>
             </thead>
             <tbody>
-              ${state.form.vitals
+              ${state.form.vitals.some(hasVitalValues) ? orderedVitals(state.form.vitals, state.form.surgeryStart)
                 .map(
-                  (r, i) => `
+                  ({ row: r, index: i }) => `
                 <tr>
-                  <td class="center">${escapeHtml(r.time)}</td>
+                  <td class="center">${escapeHtml(vitalTimeLabel(r.time))}</td>
                   ${['hr', 'spo2', 'etco2', 'temp', 'pressure', 'mac']
                     .map((k) => {
                       const level = getVitalAlertLevel(k, r[k]);
@@ -2419,7 +2422,7 @@ function vitalsTable() {
                 </tr>
               `
                 )
-                .join('')}
+                .join('') : '<tr><td colspan="7">Brak pomiarów. Użyj „Dodaj pomiar”.</td></tr>'}
             </tbody>
           </table>
         </div>
@@ -3249,20 +3252,12 @@ function renderPrintableDrugRows(rows, intra = false) {
     .join('');
 }
 
-function renderPrintableVitalsRows(rows) {
-  const filteredRows = (rows || []).filter((row) =>
-    ['time', 'hr', 'spo2', 'etco2', 'temp', 'pressure', 'mac'].some(
-      (key) => String(row[key] || '').trim() !== ''
-    )
-  );
-
-  const rowsToRender = filteredRows.length ? filteredRows : (rows || []);
-
-  return rowsToRender
+function renderPrintableVitalsRows(rows, surgeryStart) {
+  return orderedVitals(rows || [], surgeryStart)
     .map(
-      (row) => `
+      ({ row }) => `
       <tr>
-        <td style="border:1px solid #000;padding:4px;text-align:center;">${escapeHtml(row.time || '')}</td>
+        <td style="border:1px solid #000;padding:4px;text-align:center;">${escapeHtml(vitalTimeLabel(row.time))}</td>
         <td style="border:1px solid #000;padding:4px;text-align:center;">${escapeHtml(row.hr || '')}</td>
         <td style="border:1px solid #000;padding:4px;text-align:center;">${escapeHtml(row.spo2 || '')}</td>
         <td style="border:1px solid #000;padding:4px;text-align:center;">${escapeHtml(row.etco2 || '')}</td>
@@ -3436,7 +3431,7 @@ function renderPrintableCardMarkup(form) {
           <table style="width:100%;border-collapse:collapse;font-size:10px;">
             <thead>
               <tr>
-                <th style="border:1px solid #000;padding:4px;">Czas</th>
+                <th style="border:1px solid #000;padding:4px;">Godzina / czas</th>
                 <th style="border:1px solid #000;padding:4px;">HR</th>
                 <th style="border:1px solid #000;padding:4px;">SpO₂</th>
                 <th style="border:1px solid #000;padding:4px;">EtCO₂</th>
@@ -3446,7 +3441,7 @@ function renderPrintableCardMarkup(form) {
               </tr>
             </thead>
             <tbody>
-              ${renderPrintableVitalsRows(form.vitals)}
+              ${renderPrintableVitalsRows(form.vitals, form.surgeryStart)}
             </tbody>
           </table>
         </div>
