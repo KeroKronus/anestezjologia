@@ -2152,8 +2152,9 @@ function mainView() {
               </section>
               <section id="plan-procedure" class="plan-section" ${state.planSection === 'procedure' ? '' : 'hidden'} aria-label="Przebieg zabiegu">
                 <div class="stage-title">${clinicIcon('pulse')}<h2>Przebieg</h2></div>
-                <div class="clinic-actions"><button class="btn secondary clinic-icon-button" type="button" id="planMonitor">${clinicIcon('monitor')} Otwórz monitor</button></div>
                 ${procedureEntryMarkup()}
+                <div id="procedureLatest">${procedureLatestMarkup()}</div>
+                <div class="clinic-actions"><button class="btn secondary clinic-icon-button" type="button" id="planMonitor">${clinicIcon('monitor')} Otwórz monitor</button></div>
               <div class="space-16"></div>
 
               <div class="grid g2">
@@ -2177,11 +2178,11 @@ function mainView() {
 
               <div class="space-16"></div>
 
-              ${drugTable('Podania śródzabiegowe', state.form.intraopDrugs, true)}
+              ${vitalsTable()}
 
               <div class="space-16"></div>
 
-              ${vitalsTable()}
+              ${drugTable('Podania śródzabiegowe', state.form.intraopDrugs, true)}
               </section>
               <section id="plan-recovery" class="plan-section" ${state.planSection === 'recovery' ? '' : 'hidden'} aria-label="Wybudzenie">
                 <div class="stage-title">${clinicIcon('clipboard')}<h2>Wybudzenie</h2></div>
@@ -2209,7 +2210,7 @@ function procedureEntryMarkup() {
   return `
     <div class="procedure-actions no-print">
       <details class="clinic-details">
-        <summary>+ Dodaj pomiar</summary>
+        <summary>${clinicIcon('plus')} <span>Dodaj pomiar</span></summary>
         <form data-procedure-entry="vitals">
           <label class="clinic-field">Godzina pomiaru<input name="time" type="time" required></label>
           <div class="entry-grid">
@@ -2222,7 +2223,7 @@ function procedureEntryMarkup() {
         </form>
       </details>
       <details class="clinic-details">
-        <summary>+ Zapisz podanie</summary>
+        <summary>${clinicIcon('plus')} <span>Zapisz podanie</span></summary>
         <form data-procedure-entry="drug">
           <div class="entry-grid">
             <label class="clinic-field">Preparat<input name="name" required></label>
@@ -2271,6 +2272,26 @@ function orderedVitals(rows, surgeryStart) {
     .sort((first, second) => sortTime(first.row.time) - sortTime(second.row.time));
 }
 
+function vitalReadingsMarkup(row) {
+  return `<dl class="vital-readings">${vitalFields
+    .filter(([key]) => hasEntryValue(row[key]))
+    .map(([key, label, unit]) => `
+      <div><dt>${label}</dt><dd>${escapeHtml(row[key])}${unit ? ` <span>${unit}</span>` : ''}</dd></div>
+    `).join('')}</dl>`;
+}
+
+function procedureLatestMarkup() {
+  const readings = orderedVitals(state.form.vitals, state.form.surgeryStart);
+  const latest = readings[readings.length - 1]?.row;
+  if (!latest) return '';
+  return `
+    <section class="procedure-latest" aria-label="Ostatni pomiar">
+      <div class="procedure-latest-title"><strong>Ostatni pomiar</strong><span>${escapeHtml(vitalTimeLabel(latest.time))}</span></div>
+      ${vitalReadingsMarkup(latest)}
+    </section>
+  `;
+}
+
 function monitorView() {
   const measurements = orderedVitals(state.form.vitals, state.form.surgeryStart).reverse().map(({ row }) => row);
   const latest = measurements[0];
@@ -2284,8 +2305,10 @@ function monitorView() {
       </div>
       ${patientIdentityMarkup('Monitor zabiegu')}
       <section class="card card-body">
-        <div class="stage-title">${clinicIcon('monitor')}<h2>Ostatni pomiar</h2></div>
-        ${latest ? `<p class="small">${escapeHtml(vitalTimeLabel(latest.time))}</p>` : ''}
+        <div class="monitor-section-title">
+          <div class="stage-title">${clinicIcon('monitor')}<h2>Ostatni pomiar</h2></div>
+          ${latest ? `<span class="record-state">${escapeHtml(vitalTimeLabel(latest.time))}</span>` : ''}
+        </div>
         <div class="monitor-grid">
           ${vitalFields.map(([key, label, unit]) => {
             const value = latest?.[key];
@@ -2310,16 +2333,17 @@ function monitorView() {
           <div>
             <h3>Pomiary</h3>
             ${measurements.length ? `<ul>${measurements.map(row => `
-              <li><strong>${escapeHtml(vitalTimeLabel(row.time))}</strong><span>${vitalFields
-                .filter(([key]) => hasEntryValue(row[key]))
-                .map(([key, label, unit]) => `${label} ${escapeHtml(row[key])}${unit ? ` ${unit}` : ''}`)
-                .join(' · ')}</span></li>
+              <li><strong class="history-time">${escapeHtml(vitalTimeLabel(row.time))}</strong>${vitalReadingsMarkup(row)}</li>
             `).join('')}</ul>` : '<p class="small">Brak wpisanych pomiarów.</p>'}
           </div>
           <div>
             <h3>Podania</h3>
             ${doses.length ? `<ul>${doses.slice().reverse().map(row => `
-              <li><strong>${escapeHtml(row.hour || '—')}</strong><span>${escapeHtml([row.name, row.dose, row.notes].filter(Boolean).join(' · '))}</span></li>
+              <li><strong class="history-time">${escapeHtml(row.hour || '—')}</strong><div class="history-dose">
+                <b>${escapeHtml(row.name || 'Lek')}</b>
+                ${row.dose ? `<span>${escapeHtml(row.dose)}</span>` : ''}
+                ${row.notes ? `<small>${escapeHtml(row.notes)}</small>` : ''}
+              </div></li>
             `).join('')}</ul>` : '<p class="small">Brak wpisanych podań.</p>'}
           </div>
         </div>
@@ -2388,8 +2412,8 @@ function printPreviewView() {
 
       <div class="card">
         <div class="card-body">
-          <div id="pdfContent">
-            ${renderPrintableCardMarkup(state.form)}
+          <div class="pdf-preview-scroll">
+            <div id="pdfContent">${renderPrintableCardMarkup(state.form)}</div>
           </div>
         </div>
       </div>
@@ -2411,31 +2435,31 @@ function drugTable(title, rows, intra) {
       <div class="card-body">
         <h3>${title}</h3>
         <div class="table-wrap mobile-table-wrap">
-          <table class="data-table compact-table">
-            <thead>
-              <tr>
-                <th>Lek</th>
-                <th>Dawka</th>
-                <th>${intra ? 'Godzina' : 'Droga'}</th>
-                <th>Uwagi</th>
+          <table class="data-table compact-table${intra ? ' stacked-procedure-table' : ''}" role="table">
+            <thead role="rowgroup">
+              <tr role="row">
+                <th role="columnheader">Lek</th>
+                <th role="columnheader">Dawka</th>
+                <th role="columnheader">${intra ? 'Godzina' : 'Droga'}</th>
+                <th role="columnheader">Uwagi</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody role="rowgroup">
               ${rows
                 .map(
                   (r, i) => `
-                <tr>
-                  <td>
-                    <input data-drug="${intra ? 'intra' : 'main'}" data-idx="${i}" data-key="name" value="${escapeHtml(r.name)}">
+                <tr role="row">
+                  <td role="cell"><span class="mobile-cell-label" aria-hidden="true">Lek</span>
+                    <input aria-label="Lek" data-drug="${intra ? 'intra' : 'main'}" data-idx="${i}" data-key="name" value="${escapeHtml(r.name)}">
                   </td>
-                  <td>
-                    <input type="text" data-drug="${intra ? 'intra' : 'main'}" data-idx="${i}" data-key="dose" value="${escapeHtml(r.dose)}">
+                  <td role="cell"><span class="mobile-cell-label" aria-hidden="true">Dawka</span>
+                    <input aria-label="Dawka" type="text" data-drug="${intra ? 'intra' : 'main'}" data-idx="${i}" data-key="dose" value="${escapeHtml(r.dose)}">
                   </td>
-                  <td>
+                  <td role="cell"><span class="mobile-cell-label" aria-hidden="true">Godzina</span>
                     ${
                       intra
-                        ? `<input type="time" data-drug="intra" data-idx="${i}" data-key="hour" value="${escapeHtml(r.hour)}">`
-                        : `<select data-drug="main" data-idx="${i}" data-key="route">
+                        ? `<input aria-label="Godzina podania" type="time" data-drug="intra" data-idx="${i}" data-key="hour" value="${escapeHtml(r.hour)}">`
+                        : `<select aria-label="Droga podania" data-drug="main" data-idx="${i}" data-key="route">
                             <option value=""></option>
                             <option ${r.route === 'SC' ? 'selected' : ''}>SC</option>
                             <option ${r.route === 'IM' ? 'selected' : ''}>IM</option>
@@ -2444,8 +2468,8 @@ function drugTable(title, rows, intra) {
                           </select>`
                     }
                   </td>
-                  <td>
-                    <input data-drug="${intra ? 'intra' : 'main'}" data-idx="${i}" data-key="notes" value="${escapeHtml(r.notes)}">
+                  <td role="cell"><span class="mobile-cell-label" aria-hidden="true">Uwagi</span>
+                    <input aria-label="Uwagi" data-drug="${intra ? 'intra' : 'main'}" data-idx="${i}" data-key="notes" value="${escapeHtml(r.notes)}">
                   </td>
                 </tr>
               `
@@ -2546,26 +2570,26 @@ function vitalsTable() {
       <div class="card-body">
         <h3>Parametry podczas zabiegu</h3>
         <div class="table-wrap mobile-table-wrap">
-          <table class="data-table compact-table vitals-table">
-            <thead>
-              <tr>
-                <th>Godzina / czas</th>
-                <th>HR</th>
-                <th>SpO2</th>
-                <th>EtCO2</th>
-                <th>Temp</th>
-                <th>Ciśnienie</th>
-                <th>MAC %</th>
+          <table class="data-table compact-table vitals-table stacked-procedure-table" role="table">
+            <thead role="rowgroup">
+              <tr role="row">
+                <th role="columnheader">Godzina / czas</th>
+                <th role="columnheader">HR</th>
+                <th role="columnheader">SpO2</th>
+                <th role="columnheader">EtCO2</th>
+                <th role="columnheader">Temp</th>
+                <th role="columnheader">Ciśnienie</th>
+                <th role="columnheader">MAC %</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody role="rowgroup">
               ${state.form.vitals.some(hasVitalValues) ? orderedVitals(state.form.vitals, state.form.surgeryStart)
                 .map(
                   ({ row: r, index: i }) => `
-                <tr>
-                  <td class="center">${escapeHtml(vitalTimeLabel(r.time))}</td>
-                  ${['hr', 'spo2', 'etco2', 'temp', 'pressure', 'mac']
-                    .map((k) => {
+                <tr role="row">
+                  <td role="rowheader" class="center vital-row-time"><span class="mobile-cell-label" aria-hidden="true">Godzina / czas</span>${escapeHtml(vitalTimeLabel(r.time))}</td>
+                  ${vitalFields
+                    .map(([k, label, unit]) => {
                       const level = getVitalAlertLevel(k, r[k]);
                       const className =
                         level === 'danger'
@@ -2575,8 +2599,9 @@ function vitalsTable() {
                           : '';
 
                       return `
-                        <td>
-                          <input
+                        <td role="cell">
+                          <span class="mobile-cell-label" aria-hidden="true">${label}${unit ? ` (${unit})` : ''}</span>
+                          <input aria-label="${label}${unit ? ` (${unit})` : ''}" step="any"
                             type="number"
                             inputmode="decimal"
                             class="${className}"
@@ -2591,7 +2616,7 @@ function vitalsTable() {
                 </tr>
               `
                 )
-                .join('') : '<tr><td colspan="7">Brak pomiarów. Użyj „Dodaj pomiar”.</td></tr>'}
+                .join('') : '<tr role="row" class="procedure-empty-row"><td role="cell" colspan="7">Brak pomiarów. Użyj „Dodaj pomiar”.</td></tr>'}
             </tbody>
           </table>
         </div>
@@ -2628,6 +2653,9 @@ function vitalsTable() {
 }
 
 function refreshVitalsAlertsOnly() {
+  const latest = document.getElementById('procedureLatest');
+  if (latest) latest.innerHTML = procedureLatestMarkup();
+
   const alerts = getAllVitalAlerts();
 
   document.querySelectorAll('[data-vitals]').forEach((input) => {
@@ -3490,7 +3518,7 @@ function renderPrintableCardMarkup(form) {
   `;
 
   return `
-    <div style="
+    <div class="print-card" style="
       width:190mm;
       margin:0 auto;
       color:#000;
@@ -3500,10 +3528,10 @@ function renderPrintableCardMarkup(form) {
       line-height:1.28;
     ">
 
-      <div style="min-height:277mm;display:flex;flex-direction:column;">
-        <div style="text-align:center;border-bottom:2px solid #000;padding-bottom:6px;margin-bottom:8px;">
+      <div>
+        <div style="text-align:left;border-bottom:2px solid #254369;padding-bottom:6px;margin-bottom:8px;">
           <div style="font-size:11px;">${escapeHtml(form.clinicName || AUTHOR)}</div>
-          <h1 style="margin:3px 0;font-size:23px;line-height:1.1;">KARTA ANESTEZJOLOGICZNA</h1>
+          <h1 style="margin:3px 0;font-size:23px;line-height:1.1;color:#142b42;">KARTA ANESTEZJOLOGICZNA</h1>
           <div style="font-size:10.5px;">${escapeHtml(form.authorMark || `Autorstwo: ${AUTHOR}`)}</div>
         </div>
 
@@ -3596,15 +3624,11 @@ function renderPrintableCardMarkup(form) {
           </table>
         </div>
 
-        <div style="margin-top:auto;display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:10px;">
-          <div>Strona 1 / 2</div>
-          <div style="text-align:right;">${escapeHtml(new Date().toLocaleString('pl-PL'))}</div>
-        </div>
       </div>
 
-      <div style="page-break-before:always;min-height:277mm;display:flex;flex-direction:column;">
-        <div style="text-align:center;border-bottom:2px solid #000;padding-bottom:6px;margin-bottom:8px;">
-          <h2 style="margin:3px 0;font-size:21px;">PRZEBIEG ZNIECZULENIA</h2>
+      <div style="page-break-before:always;">
+        <div style="text-align:left;border-bottom:2px solid #254369;padding-bottom:6px;margin-bottom:8px;">
+          <h2 style="margin:3px 0;font-size:21px;color:#142b42;">PRZEBIEG ZNIECZULENIA</h2>
           <div style="font-size:11px;">
             ${escapeHtml(form.animalName || 'Pacjent')} | ${escapeHtml(form.species || '-')} | ${escapeHtml(form.weight || '-')} kg
           </div>
@@ -3689,10 +3713,6 @@ function renderPrintableCardMarkup(form) {
           </div>
         </div>
 
-        <div style="margin-top:5px;display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:10px;">
-          <div>Strona 2 / 2</div>
-          <div style="text-align:right;">Wygenerowano: ${escapeHtml(new Date().toLocaleString('pl-PL'))}</div>
-        </div>
       </div>
     </div>
   `;
@@ -3717,7 +3737,7 @@ function generatePDF() {
     .replace(/[^a-z0-9\-ąćęłńóśźż]/gi, '');
 
   const opt = {
-    margin: [4, 4, 4, 4],
+    margin: [8, 8, 13, 8],
     filename: `plan-anestezjologiczny-${patientName || 'pacjent'}-${new Date().toISOString().slice(0, 10)}.pdf`,
     image: { type: 'jpeg', quality: 0.98 },
     html2canvas: {
@@ -3732,13 +3752,25 @@ function generatePDF() {
       orientation: 'portrait'
     },
     pagebreak: {
-      mode: ['css', 'legacy']
+      mode: ['css', 'legacy'],
+      avoid: '.print-card tr'
     }
   };
 
   html2pdf()
     .set(opt)
     .from(element)
+    .toPdf()
+    .get('pdf').then((pdf) => {
+      const count = pdf.getNumberOfPages();
+      const { pageSize } = pdf.internal;
+      pdf.setFontSize(9);
+      pdf.setTextColor(55);
+      for (let page = 1; page <= count; page++) {
+        pdf.setPage(page);
+        pdf.text(`Strona ${page} / ${count}`, pageSize.getWidth() - 8, pageSize.getHeight() - 6, { align: 'right' });
+      }
+    })
     .save()
     .catch((err) => {
       console.error('Błąd PDF:', err);
