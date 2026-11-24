@@ -391,7 +391,7 @@ let state = {
   doseMgKgChoice: '',
   librarySearch: '',
   librarySpecies: '',
-  libraryWeight: '',
+  libraryWeight: null,
   libraryDrugName: '',
   session: null,
   user: null,
@@ -797,7 +797,7 @@ function buildProtocolPreview(protocol, species, weight) {
 function addProtocolToPlan() {
   const protocol = getSelectedProtocol();
   const species = state.doseSpecies;
-  const weight = Number(state.doseWeight || 0);
+  const weight = parseMass(state.doseWeight);
 
   if (!protocol) {
     alert('Najpierw wybierz protokół.');
@@ -1112,7 +1112,7 @@ function renderProtocolCardsMarkup() {
 function renderProtocolPreviewMarkup() {
   const protocol = getSelectedProtocol();
   const species = state.doseSpecies;
-  const weight = Number(state.doseWeight || 0);
+  const weight = parseMass(state.doseWeight);
 
   if (!protocol) {
     return `<div class="small">Wybierz protokół, aby zobaczyć podgląd.</div>`;
@@ -1162,7 +1162,7 @@ function formatDoseVolume(totalMl, totalMg) {
 }
 
 function updateDoseCalculator() {
-  const weight = Number(state.doseWeight || 0);
+  const weight = parseMass(state.doseWeight);
   const mgKg = Number(state.doseMgKg || 0);
   const mgMl = Number(state.doseMgMl || 0);
   const mlPerKg = Number(state.doseMlPerKg || 0);
@@ -1338,7 +1338,7 @@ function homeView() {
 }
 
 function dosesView() {
-  const weight = Number(state.doseWeight || 0);
+  const weight = parseMass(state.doseWeight);
   const mgKg = Number(state.doseMgKg || 0);
   const mgMl = Number(state.doseMgMl || 0);
   const mlPerKg = Number(state.doseMlPerKg || 0);
@@ -1385,7 +1385,7 @@ function dosesView() {
 
             <div>
               <label class="label">Masa ciała (kg)</label>
-              <input id="doseWeight" type="number" inputmode="decimal" step="0.01" value="${escapeHtml(state.doseWeight || '')}">
+              <input id="doseWeight" type="text" inputmode="decimal" value="${escapeHtml(state.doseWeight || '')}">
             </div>
           </div>
 
@@ -1497,8 +1497,20 @@ function getLibraryDrugs() {
   });
 }
 
+function readMassInput(input, previousValue) {
+  if (!/^\d*(?:[.,]\d*)?$/.test(input.value)) {
+    input.value = previousValue ?? '';
+  }
+  return input.value.replace(',', '.');
+}
+
+function parseMass(value) {
+  const mass = Number(String(value ?? '').replace(',', '.'));
+  return Number.isFinite(mass) && mass > 0 ? mass : 0;
+}
+
 function getDrugMlResult(drug, weightValue) {
-  const weight = Number(weightValue || 0);
+  const weight = parseMass(weightValue);
   if (weight <= 0) return 'Wpisz masę ciała';
 
   if (Array.isArray(drug.doseRangeMlPerKg) && drug.doseRangeMlPerKg.length === 2) {
@@ -1568,14 +1580,14 @@ function renderLibraryCalculatorMarkup() {
         <div class="space-16"></div>
 
         <label class="label">Masa ciała (kg)</label>
-        <input id="libraryWeight" type="number" inputmode="decimal" step="0.01" value="${escapeHtml(state.libraryWeight || state.doseWeight || state.form.weight || '')}" placeholder="Np. 12.5">
+        <input id="libraryWeight" type="text" inputmode="decimal" value="${escapeHtml(state.libraryWeight ?? (state.doseWeight || state.form.weight || ''))}" placeholder="Np. 12.5">
 
         <div class="space-16"></div>
 
         <div class="results-grid">
           <div class="result-box">
             <div class="result-label">Wynik</div>
-            <div class="result-value small-result" id="libraryResult">${escapeHtml(getDrugMlResult(drug, state.libraryWeight || state.doseWeight || state.form.weight || ''))}</div>
+            <div class="result-value small-result" id="libraryResult">${escapeHtml(getDrugMlResult(drug, state.libraryWeight ?? (state.doseWeight || state.form.weight || '')))}</div>
           </div>
           <div class="result-box">
             <div class="result-label">Droga podania</div>
@@ -1869,7 +1881,7 @@ function mainView() {
                 </div>
                 <div>
                   <label class="label">Waga</label>
-                  <input data-field="weight" type="number" inputmode="decimal" step="0.1" value="${escapeHtml(state.form.weight)}">
+                  <input data-field="weight" type="text" inputmode="decimal" value="${escapeHtml(state.form.weight)}">
                 </div>
               </div>
 
@@ -2280,7 +2292,7 @@ function refreshVitalsAlertsOnly() {
 }
 
 function addDoseToPlan() {
-  const weight = Number(state.doseWeight || 0);
+  const weight = parseMass(state.doseWeight);
   const mgKg = Number(state.doseMgKg || 0);
   const mgMl = Number(state.doseMgMl || 0);
   const mlPerKg = Number(state.doseMlPerKg || 0);
@@ -2354,9 +2366,9 @@ function bindLibraryDrugButtons() {
 function bindLibraryWeightInput() {
   const libraryWeight = document.getElementById('libraryWeight');
   if (!libraryWeight) return;
-  if (!state.libraryWeight && libraryWeight.value) state.libraryWeight = libraryWeight.value;
+  if (state.libraryWeight === null && libraryWeight.value) state.libraryWeight = libraryWeight.value;
   libraryWeight.oninput = (e) => {
-    state.libraryWeight = e.target.value;
+    state.libraryWeight = readMassInput(e.target, state.libraryWeight);
     const drug = getSelectedLibraryDrug();
     const result = document.getElementById('libraryResult');
     if (result && drug) result.textContent = getDrugMlResult(drug, state.libraryWeight);
@@ -2521,10 +2533,18 @@ function bind() {
   const doseWeight = document.getElementById('doseWeight');
   if (doseWeight) {
     doseWeight.oninput = (e) => {
-      state.doseWeight = e.target.value;
+      state.doseWeight = readMassInput(e.target, state.doseWeight);
       updateDoseCalculator();
       const preview = document.getElementById('protocolPreview');
-      if (preview) preview.innerHTML = renderProtocolPreviewMarkup();
+      if (preview) {
+        // Keep the page from shrinking when the mass is temporarily empty.
+        preview.style.minHeight = `${preview.offsetHeight}px`;
+        preview.innerHTML = renderProtocolPreviewMarkup();
+      }
+    };
+    doseWeight.onblur = () => {
+      const preview = document.getElementById('protocolPreview');
+      if (preview) preview.style.minHeight = '';
     };
   }
 
@@ -2630,7 +2650,7 @@ function bind() {
   document.querySelectorAll('[data-field]').forEach((el) => {
     el.oninput = (e) => {
       const field = e.target.dataset.field;
-      state.form[field] = e.target.value;
+      state.form[field] = field === 'weight' ? readMassInput(e.target, state.form.weight) : e.target.value;
 
       if (field === 'species') {
         state.form.breed = '';
@@ -2646,7 +2666,7 @@ function bind() {
 
     el.onchange = (e) => {
       const field = e.target.dataset.field;
-      state.form[field] = e.target.value;
+      state.form[field] = field === 'weight' ? readMassInput(e.target, state.form.weight) : e.target.value;
 
       if (field === 'species') {
         state.form.breed = '';
