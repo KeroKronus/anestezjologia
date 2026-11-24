@@ -1509,3 +1509,128 @@ body[data-theme='dark'][data-accent='teal'] {
   background: var(--badge-bg);
   color: var(--badge-text);
 }
+
+.procedure-actions {
+  margin: 0 0 12px;
+}
+
+.procedure-actions .clinic-details {
+  margin-top: 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+}
+
+.procedure-actions summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+}
+
+.procedure-actions summary::-webkit-details-marker { display: none; }
+
+.procedure-actions .clinic-details:first-child summary {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+.procedure-actions .clinic-details form {
+  padding: 0 12px 12px;
+}
+
+.procedure-latest {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+}
+
+.procedure-latest-title, .monitor-section-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.procedure-latest-title > span, .history-time {
+  color: var(--primary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.vital-readings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin: 5px 0 0;
+}
+
+.vital-readings > div { min-width: 0; }
+.vital-readings dt, .vital-readings dd > span, .history-dose small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.vital-readings dd {
+  margin: 0;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.monitor-history .grid > div { min-width: 0; }
+.monitor-history li .vital-readings { margin: 0; }
+.history-dose { display: grid; gap: 2px; min-width: 0; }
+.mobile-cell-label { display: none; }
+.pdf-preview-scroll { overflow-x: auto; }
+.print-card :is(td, th) { overflow-wrap: anywhere; }
+
+@media (max-width: 640px) {
+  .procedure-actions { gap: 8px; }
+  .stacked-procedure-table {
+    display: block;
+    min-width: 0;
+  }
+
+  .stacked-procedure-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .stacked-procedure-table tbody { display: grid; gap: 8px; }
+
+  .stacked-procedure-table tbody > tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 5px 8px;
+    padding: 8px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--surface-2);
+  }
+
+  .stacked-procedure-table td { min-width: 0; border: 0; }
+  .stacked-procedure-table :is(input, select) { min-width: 0; }
+  .stacked-procedure-table .mobile-cell-label {
+    display: block;
+    margin-bottom: 2px;
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  .stacked-procedure-table .vital-row-time {
+    grid-column: 1 / -1;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 6px;
+    text-align: left;
+    font-weight: 700;
+  }
+
+  .stacked-procedure-table .procedure-empty-row > td { grid-column: 1 / -1; }
+}
