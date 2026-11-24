@@ -1462,3 +1462,50 @@ body[data-theme='dark'][data-accent='teal'] {
   .stage-overview .grid { grid-template-columns: minmax(0, 1fr) minmax(100px, .75fr); gap: 8px; }
   .baseline-field { grid-template-columns: minmax(0, 1fr) 55px 72px; }
 }
+
+.clinic-shell[data-page='launcher'] {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
+  min-height: 100svh;
+}
+
+.clinic-shell[data-page='launcher'] .clinic-content { grid-row: 2; }
+.clinic-content .clinic-launcher { max-width: 640px; padding: clamp(16px, 5vw, 30px); }
+.clinic-launcher h1 { margin-bottom: 16px; }
+
+.clinic-launcher-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.clinic-launcher-button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 98px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-soft);
+  text-align: left;
+  font-size: 14px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.clinic-launcher-button:hover { border-color: var(--primary); }
+.clinic-launcher-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background: var(--badge-bg);
+  color: var(--badge-text);
+}

@@ -571,7 +571,7 @@ async function signInWithEmail() {
   state.unlocked = true;
   await loadProfile();
   await loadCloudRecords();
-  state.currentPage = initialClinicPage();
+  state.currentPage = initialClinicPage({ afterLogin: true });
   render();
 }
 
@@ -612,7 +612,7 @@ async function signUpWithEmail() {
   if (state.session) {
     state.unlocked = true;
     await loadCloudRecords();
-    state.currentPage = initialClinicPage();
+    state.currentPage = initialClinicPage({ afterLogin: true });
     render();
   } else {
     alert('Konto utworzone. Jeśli Supabase wymaga potwierdzenia e-maila, sprawdź skrzynkę.');
@@ -658,7 +658,7 @@ async function initSupabaseAuth() {
     if (session) {
       await loadProfile();
       await loadCloudRecords();
-      if (!wasUnlocked) state.currentPage = initialClinicPage();
+      if (!wasUnlocked) state.currentPage = initialClinicPage({ afterLogin: _event === 'SIGNED_IN' });
     }
     render();
   });
@@ -1212,6 +1212,7 @@ function render() {
     } else {
       const views = {
         home: homeView,
+        launcher: clinicLauncherView,
         plan: mainView,
         dawki: dosesView,
         biblioteka: libraryView,
@@ -1318,14 +1319,32 @@ function clinicIcon(name) {
   return `<svg class="clinic-icon" viewBox="0 0 ${size} ${size}" ${style} aria-hidden="true" focusable="false">${clinicIcons[name]}</svg>`;
 }
 
+const clinicPages = [
+  ['home', 'Karty pacjentów', 'folder'],
+  ['dawki', 'Obliczanie dawek leków', 'calculator'],
+  ['biblioteka', 'Biblioteka leków', 'book'],
+  ['monitor', 'Monitor zabiegu', 'monitor'],
+  ['ustawienia', 'Ustawienia', 'settings']
+];
+
+function clinicLauncherView() {
+  return `
+    <div class="app clinic-launcher">
+      <h1>Wybierz moduł</h1>
+      <nav class="clinic-launcher-grid" aria-label="Moduły aplikacji">
+        ${[...clinicPages, ['podziekowania', 'Podziękowania', 'paw']].map(([page, label, icon]) => `
+          <button type="button" class="clinic-launcher-button" data-nav="${page}">
+            <span class="clinic-launcher-icon">${clinicIcon(icon)}</span>
+            <span>${label}</span>
+          </button>
+        `).join('')}
+      </nav>
+    </div>
+  `;
+}
+
 function clinicShell(content) {
-  const pages = [
-    ['home', 'Karty pacjentów', 'folder'],
-    ['dawki', 'Obliczanie dawek leków', 'calculator'],
-    ['biblioteka', 'Biblioteka leków', 'book'],
-    ['monitor', 'Monitor zabiegu', 'monitor'],
-    ['ustawienia', 'Ustawienia', 'settings']
-  ];
+  const launcher = state.currentPage === 'launcher';
   const active = ['plan', 'printPreview'].includes(state.currentPage) ? 'home' : state.currentPage;
 
   return `
@@ -1335,18 +1354,18 @@ function clinicShell(content) {
           <span class="clinic-brand-mark">${clinicIcon('brand')}</span>
           <span>${APP_NAME}<small>Weterynaryjna aplikacja do anestezjologii</small></span>
         </button>
-        <div class="clinic-header-actions">
+        ${launcher ? '' : `<div class="clinic-header-actions">
           <button class="clinic-theme" type="button" id="openAppearance">${clinicIcon('settings')}<span>${escapeHtml(getThemeLabel())}</span></button>
           <button class="clinic-menu-toggle" type="button" id="clinicMenuToggle" aria-controls="clinicNav" aria-expanded="false" aria-label="Menu główne">${clinicIcon('menu')}</button>
-        </div>
+        </div>`}
       </header>
-      <nav class="clinic-nav no-print" id="clinicNav" aria-label="Główne menu">
+      ${launcher ? '' : `<nav class="clinic-nav no-print" id="clinicNav" aria-label="Główne menu">
         <p class="clinic-nav-title">Panel kliniki</p>
-        ${pages.map(([page, label, icon]) => `
+        ${clinicPages.map(([page, label, icon]) => `
           <button type="button" data-nav="${page}" ${active === page ? 'aria-current="page"' : ''}>${clinicIcon(icon)}<span>${label}</span></button>
         `).join('')}
         <button type="button" data-nav="podziekowania" class="clinic-credits" ${active === 'podziekowania' ? 'aria-current="page"' : ''}>Podziękowania</button>
-      </nav>
+      </nav>`}
       <main class="clinic-content" id="clinicContent">${content}</main>
     </div>
   `;
@@ -2747,7 +2766,7 @@ function bind() {
         const pinInput = document.getElementById('pinInput');
         if (pinInput && pinInput.value === getPin()) {
           state.unlocked = true;
-          state.currentPage = initialClinicPage();
+          state.currentPage = initialClinicPage({ afterLogin: true });
           render();
         } else {
           alert('Nieprawidlowy PIN.');
@@ -3201,9 +3220,10 @@ function bind() {
   if (pc) pc.onchange = (e) => setPin(e.target.value || defaultPin);
 }
 
-function initialClinicPage() {
-  const hasCard = state.selectedId || loadDraft();
-  return hasCard && window.matchMedia('(max-width: 640px)').matches ? 'plan' : 'home';
+function initialClinicPage({ afterLogin = false } = {}) {
+  if (!window.matchMedia('(max-width: 640px)').matches) return 'home';
+  if (afterLogin) return 'launcher';
+  return state.selectedId || loadDraft() ? 'plan' : 'home';
 }
 
 function showClinicPage(page) {
