@@ -1429,20 +1429,20 @@ function dosesView() {
 
       <div class="card">
         <div class="card-body">
-          <h3>Obliczanie dawek leków</h3>
+          <h1 class="clinic-page-heading">Obliczanie dawek leków</h1>
 
-          <div class="toolbar">
-            <button class="btn ${state.doseTab === 'calculator' ? 'primary-btn' : 'secondary'}" id="doseTabCalculator">
+          <div class="dose-tabs" role="group" aria-label="Tryb obliczeń">
+            <button class="btn ${state.doseTab === 'calculator' ? 'primary-btn' : 'secondary'}" id="doseTabCalculator" aria-pressed="${state.doseTab === 'calculator'}">
               Kalkulator
             </button>
-            <button class="btn ${state.doseTab === 'protocols' ? 'primary-btn' : 'secondary'}" id="doseTabProtocols">
+            <button class="btn ${state.doseTab === 'protocols' ? 'primary-btn' : 'secondary'}" id="doseTabProtocols" aria-pressed="${state.doseTab === 'protocols'}">
               Protokoły
             </button>
           </div>
 
           <div class="grid g2">
             <div>
-              <label class="label">Gatunek</label>
+              <label class="label" for="doseSpecies">Gatunek</label>
               <select id="doseSpecies">
                 <option value="">Wybierz</option>
                 <option value="Pies" ${state.doseSpecies === 'Pies' ? 'selected' : ''}>Pies</option>
@@ -1451,7 +1451,7 @@ function dosesView() {
             </div>
 
             <div>
-              <label class="label">Masa ciała (kg)</label>
+              <label class="label" for="doseWeight">Masa ciała (kg)</label>
               <input id="doseWeight" type="text" inputmode="decimal" value="${escapeHtml(state.doseWeight || '')}">
             </div>
           </div>
@@ -1461,33 +1461,35 @@ function dosesView() {
           ${
             state.doseTab === 'calculator'
               ? `
-            <div class="grid g2">
-              <div class="breed-field">
-                <label class="label">Nazwa leku</label>
+            <div class="dose-entry-layout">
+              <div class="dose-drug-picker">
+                <label class="label" for="doseDrugName">Nazwa leku</label>
                 <input id="doseDrugName" value="${escapeHtml(state.doseDrugName || '')}" placeholder="Wpisz własną nazwę lub wybierz z listy" autocomplete="off">
-                <label class="label" for="doseDrugSearch">Szukaj na liście leków</label>
+                <label class="label dose-search-label" for="doseDrugSearch">Szukaj na liście leków</label>
                 <input id="doseDrugSearch" type="search" value="${escapeHtml(state.doseDrugQuery)}" autocomplete="off">
                 ${renderDrugSuggestionsMarkup()}
               </div>
 
-              ${renderDoseOptionMarkup()}
+              <div class="dose-entry-fields">
+                ${renderDoseOptionMarkup()}
 
-              <div>
-                <label class="label">Dawka (mg/kg)</label>
-                <input id="doseMgKg" type="number" inputmode="decimal" step="0.01" value="${escapeHtml(state.doseMgKg || '')}">
+                <div>
+                  <label class="label" for="doseMgKg">Dawka (mg/kg)</label>
+                  <input id="doseMgKg" type="number" inputmode="decimal" step="0.01" value="${escapeHtml(state.doseMgKg || '')}">
+                </div>
+
+                <div>
+                  <label class="label" for="doseMgMl">Stężenie preparatu (mg/ml)</label>
+                  <input id="doseMgMl" type="number" inputmode="decimal" step="0.01" value="${escapeHtml(state.doseMgMl || '')}">
+                </div>
+
+                <div>
+                  <label class="label" for="doseMlPerKg">Schemat objętościowy (ml/kg)</label>
+                  <input id="doseMlPerKg" type="number" inputmode="decimal" step="0.001" value="${escapeHtml(state.doseMlPerKg || '')}">
+                </div>
+
+                ${renderDoseRouteMarkup()}
               </div>
-
-              <div>
-                <label class="label">Stężenie preparatu (mg/ml)</label>
-                <input id="doseMgMl" type="number" inputmode="decimal" step="0.01" value="${escapeHtml(state.doseMgMl || '')}">
-              </div>
-
-              <div>
-                <label class="label">Schemat objętościowy (ml/kg)</label>
-                <input id="doseMlPerKg" type="number" inputmode="decimal" step="0.001" value="${escapeHtml(state.doseMlPerKg || '')}">
-              </div>
-
-              ${renderDoseRouteMarkup()}
             </div>
 
             <div class="space-16"></div>
@@ -1690,18 +1692,18 @@ function libraryView() {
 
       <div class="card">
         <div class="card-body">
-          <h3>Biblioteka leków</h3>
-          <div class="small">Osobna baza leków z kalkulatorem objętości. Wyszukiwarka działa bez przeładowywania całego ekranu.</div>
+          <h1 class="clinic-page-heading">Biblioteka leków</h1>
+          <div class="small">Wybierz preparat, aby zobaczyć jego szczegóły i kalkulator.</div>
 
           <div class="space-16"></div>
 
           <div class="grid g2">
             <div>
-              <label class="label">Szukaj leku</label>
+              <label class="label" for="librarySearch">Szukaj leku</label>
               <input id="librarySearch" value="${escapeHtml(state.librarySearch || '')}" placeholder="Np. synulox, antybiotyk, maropitant" autocomplete="off">
             </div>
             <div>
-              <label class="label">Gatunek</label>
+              <label class="label" for="librarySpecies">Gatunek</label>
               <select id="librarySpecies">
                 <option value="">Wszystkie</option>
                 <option value="Pies" ${state.librarySpecies === 'Pies' ? 'selected' : ''}>Pies</option>
@@ -1739,28 +1741,35 @@ function settingsView() {
 
       <div class="card">
         <div class="card-body">
-          <h3>Ustawienia</h3>
+          <h1 class="clinic-page-heading">Ustawienia</h1>
 
-          <div class="settings-group">
-            <label class="label" for="themeSelect">Motyw aplikacji</label>
-            <select id="themeSelect">
-              <option value="light" ${state.theme === 'light' ? 'selected' : ''}>Jasny</option>
-              <option value="dark" ${state.theme === 'dark' ? 'selected' : ''}>Ciemny</option>
-              <option value="pink" ${state.theme === 'pink' ? 'selected' : ''}>Różowy</option>
-            </select>
-          </div>
+          <fieldset class="appearance-settings">
+            <legend>Wygląd</legend>
+            <div class="grid g2">
+              <div class="settings-group">
+                <label class="label" for="themeSelect">Motyw aplikacji</label>
+                <select id="themeSelect">
+                  <option value="light" ${state.theme === 'light' ? 'selected' : ''}>Jasny</option>
+                  <option value="dark" ${state.theme === 'dark' ? 'selected' : ''}>Ciemny</option>
+                  <option value="pink" ${state.theme === 'pink' ? 'selected' : ''}>Różowy</option>
+                </select>
+              </div>
 
-          <div class="settings-group">
-            <label class="label" for="accentSelect">Kolor akcentu</label>
-            <select id="accentSelect">
-              ${[['default', 'Domyślny dla motywu'], ['navy', 'Granatowy'], ['teal', 'Turkusowy']].map(([value, label]) => `
-                <option value="${value}" ${state.accent === value ? 'selected' : ''}>${label}</option>
-              `).join('')}
-            </select>
-          </div>
+              <div class="settings-group">
+                <label class="label" for="accentSelect">Kolor akcentu</label>
+                <select id="accentSelect">
+                  ${[['default', 'Domyślny dla motywu'], ['navy', 'Granatowy'], ['teal', 'Turkusowy']].map(([value, label]) => `
+                    <option value="${value}" ${state.accent === value ? 'selected' : ''}>${label}</option>
+                  `).join('')}
+                </select>
+              </div>
 
+            </div>
+          </fieldset>
+
+          <h2 class="settings-heading">Połączenie i dostęp</h2>
           <div class="settings-group">
-            <label class="label">Supabase Project URL</label>
+            <label class="label" for="supabaseUrlInput">Supabase Project URL</label>
             <input id="supabaseUrlInput" value="${escapeHtml(cfg.url)}" placeholder="https://xxxxx.supabase.co">
           </div>
 
@@ -1801,7 +1810,7 @@ function thanksView() {
 
       <div class="card">
         <div class="card-body">
-          <h3>Szczególne podziękowania</h3>
+          <h1 class="clinic-page-heading">Szczególne podziękowania</h1>
           <p>
             Szczególne podziękowania kieruję do mojej przyjaciółki Honoraty za ogromne wsparcie, motywację i wiarę w ten projekt od samego początku.
           </p>
@@ -2208,7 +2217,7 @@ function printPreviewView() {
 
       <div class="card no-print">
         <div class="card-body">
-          <h3>Podgląd wydruku</h3>
+          <h1 class="clinic-page-heading">Podgląd wydruku</h1>
           <div class="small">
             To jest kliniczny podglad planu. Przyciskiem „Pobierz PDF” zapiszesz plik na komputerze lub telefonie.
           </div>
