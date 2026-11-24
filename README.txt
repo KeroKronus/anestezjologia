@@ -36,3 +36,18 @@ aplikacja tworzy profil w stanie „oczekuje”. Administrator otwiera moduł Pe
 e-mail. Zmiana zapisuje się od razu w Supabase. Własną rolą może zarządzać
 opiekun projektu w panelu Supabase. Zaakceptowana osoba może kliknąć
 „Sprawdź ponownie” na ekranie dostępu.
+
+ODZYSKIWANIE HASŁA I ZAPIS KART
+
+W Supabase → Authentication → URL Configuration dodaj do Redirect URLs:
+https://anestezjologia.vercel.app/?odzyskiwanie=1
+Ustaw Site URL na https://anestezjologia.vercel.app, jeśli jest to adres
+produkcyjny. Do testowania na innym adresie dodaj jego dokładny odpowiednik.
+Sprawdź wysyłkę wiadomości do skrzynki testowej po wdrożeniu aplikacji.
+
+Przed wdrożeniem uruchom zaktualizowany supabase_setup.sql. Zapis kart
+odbywa się teraz przez funkcję save_patient_card, dlatego po uruchomieniu
+skryptu odśwież aplikację po zakończeniu wdrożenia nowej wersji w Vercel.
+Historia zaczyna się od pierwszego zapisu po włączeniu tej funkcji.
+W przypadku konfliktu aplikacja zachowuje szkic. Starsze szkice bez numeru
+wersji odczytują się, ale do zapisu trzeba użyć aktualnej karty z bazy.

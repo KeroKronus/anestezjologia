@@ -362,11 +362,20 @@ const blankForm = () => ({
   updatedAt: ''
 });
 
+const recoveryUrl = new URL(window.location.href);
+const recoveryLink = recoveryUrl.searchParams.get('odzyskiwanie') === '1'
+  || new URLSearchParams(recoveryUrl.hash.slice(1)).get('type') === 'recovery';
+
 const initialDraft = loadDraft();
 
 let state = {
   records: loadRecords(),
   selectedId: initialDraft?.selectedId ?? null,
+  cardRevision: null,
+  pendingCardSave: null,
+  savingCard: false,
+  cardSaveStatus: '',
+  cardNeedsRefresh: false,
   form: initialDraft?.form ?? blankForm(),
   query: '',
   patientStatusFilter: '',
@@ -400,7 +409,8 @@ let state = {
   workspaceUserId: null,
   staffLoading: false,
   syncStatus: '',
-  authLoading: false
+  authLoading: false,
+  passwordRecovery: recoveryLink ? 'checking' : ''
 };
 
 function loadRecords() {
@@ -445,7 +455,8 @@ function getSupabaseClient() {
   if (!isSupabaseConfigured()) return null;
   if (supabaseClient) return supabaseClient;
   const cfg = loadSupabaseConfig();
-  supabaseClient = window.supabase.createClient(cfg.url, cfg.anonKey);
+  const options = recoveryLink ? { auth: { persistSession: false, autoRefreshToken: false } } : undefined;
+  supabaseClient = window.supabase.createClient(cfg.url, cfg.anonKey, options);
   return supabaseClient;
 }
 
@@ -457,13 +468,14 @@ function mapCloudRecord(row) {
   const data = row.data_json || {};
   return {
     id: row.id,
+    revision: row.revision,
     data: {
       ...data,
       animalName: data.animalName || row.animal_name || '',
       ownerName: data.ownerName || row.owner_name || '',
       species: data.species || row.species || '',
-      createdAt: data.createdAt || row.created_at || '',
-      updatedAt: data.updatedAt || row.updated_at || ''
+      createdAt: row.created_at || data.createdAt || '',
+      updatedAt: row.updated_at || data.updatedAt || ''
     },
     createdByName: row.created_by_profile?.full_name || row.created_by_profile?.username || '',
     updatedByName: row.updated_by_profile?.full_name || row.updated_by_profile?.username || ''
@@ -504,6 +516,7 @@ async function loadStaffWorkspace() {
     state.profile = null;
     state.records = [];
     state.selectedId = null;
+    resetCardSave();
     state.form = blankForm();
     state.syncStatus = '';
   }
@@ -514,12 +527,14 @@ async function loadStaffWorkspace() {
     if (changedUser || !hadAccess || previousRole !== state.profile.role) {
       const draft = canEditCards() ? loadDraft(staffDraftKey()) : null;
       state.selectedId = draft?.selectedId ?? null;
+      resetCardSave(draft?.revision, draft?.pendingSave);
       state.form = draft?.form ?? blankForm();
     }
     await loadCloudRecords();
   } else {
     state.records = [];
     state.selectedId = null;
+    resetCardSave();
     state.form = blankForm();
   }
   if (state.user?.id === userId) state.staffLoading = false;
@@ -565,7 +580,7 @@ async function ensureProfile() {
 
 async function loadCloudRecords() {
   const client = getSupabaseClient();
-  if (!client || !canReadStaffCards()) return;
+  if (!client || !canReadStaffCards()) return false;
   const userId = state.user.id;
 
   state.syncStatus = 'Synchronizacja bazy...';
@@ -573,6 +588,7 @@ async function loadCloudRecords() {
     .from('patients')
     .select(`
       id,
+      revision,
       animal_name,
       owner_name,
       species,
@@ -584,21 +600,23 @@ async function loadCloudRecords() {
     `)
     .order('updated_at', { ascending: false });
 
-  if (state.user?.id !== userId) return;
+  if (state.user?.id !== userId) return false;
   if (error) {
     console.error(error);
     state.syncStatus = 'Błąd synchronizacji: ' + error.message;
-    return;
+    return false;
   }
 
   state.records = (data || []).map(mapCloudRecord);
 
   if (!state.selectedId && state.records[0] && (!canEditCards() || !loadDraft(staffDraftKey()))) {
     state.selectedId = state.records[0].id;
+    resetCardSave(state.records[0].revision);
     state.form = JSON.parse(JSON.stringify(state.records[0].data));
   }
 
   state.syncStatus = `Online: ${state.records.length} kart pacjentów`;
+  return true;
 }
 
 async function signInWithEmail() {
@@ -696,14 +714,138 @@ async function signOut() {
   state.unlocked = false;
   state.currentPage = 'home';
   state.selectedId = null;
+  resetCardSave();
   state.form = blankForm();
   state.entryMessage = '';
   state.planSection = 'prep';
   render();
 }
 
+function passwordRecoveryView() {
+  const recovery = state.passwordRecovery;
+  const active = recovery === 'ready';
+  const headline = recovery === 'done' ? 'Hasło zostało zmienione' : 'Ustaw nowe hasło';
+  const message = {
+    checking: 'Sprawdzamy link do odzyskania hasła.',
+    invalid: 'Link wygasł lub jest nieprawidłowy. Wróć do logowania i poproś o nowy link.',
+    done: 'Możesz zalogować się nowym hasłem.'
+  }[recovery];
+  return `
+    <div class="login">
+      <div class="card login-card card-body">
+        <h1>${headline}</h1>
+        ${message ? `<p role="status">${message}</p>` : ''}
+        ${active ? `
+          <form id="newPasswordForm" class="recovery-form">
+            <label class="label" for="newPassword">Nowe hasło</label>
+            <input id="newPassword" type="password" autocomplete="new-password" minlength="8" required>
+            <label class="label" for="repeatPassword">Powtórz nowe hasło</label>
+            <input id="repeatPassword" type="password" autocomplete="new-password" minlength="8" required>
+            <button type="submit" class="btn primary-btn">Ustaw hasło</button>
+          </form>
+          <p id="newPasswordStatus" class="small" role="status"></p>` : ''}
+        ${recovery === 'checking' ? '' : '<a class="btn secondary" href="/">Wróć do logowania</a>'}
+      </div>
+    </div>
+  `;
+}
+
+async function requestPasswordReset(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const email = form.querySelector('input').value.trim();
+  const button = form.querySelector('button[type="submit"]');
+  const status = document.getElementById('resetEmailStatus');
+  const client = getSupabaseClient();
+  if (!client) {
+    status.textContent = 'Nie udało się połączyć. Spróbuj ponownie.';
+    return;
+  }
+
+  button.disabled = true;
+  status.textContent = 'Wysyłanie…';
+  try {
+    const redirect = new URL('/?odzyskiwanie=1', window.location.origin);
+    const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo: redirect.href });
+    if (error && (!error.status || error.status >= 500)) {
+      status.textContent = 'Usługa pocztowa jest niedostępna. Spróbuj ponownie.';
+      return;
+    }
+    status.textContent = 'Jeśli adres jest zarejestrowany, otrzymasz link do ustawienia nowego hasła.';
+  } catch {
+    status.textContent = 'Nie udało się wysłać zgłoszenia. Spróbuj ponownie.';
+  } finally {
+    button.disabled = false;
+  }
+}
+
+async function updateRecoveredPassword(event) {
+  event.preventDefault();
+  if (state.passwordRecovery !== 'ready') return;
+  const form = event.currentTarget;
+  const password = form.querySelector('#newPassword').value;
+  const confirmation = form.querySelector('#repeatPassword').value;
+  const button = form.querySelector('button[type="submit"]');
+  const status = document.getElementById('newPasswordStatus');
+  if (password !== confirmation) {
+    status.textContent = 'Wpisane hasła różnią się.';
+    return;
+  }
+
+  const client = getSupabaseClient();
+  if (!client) return;
+  button.disabled = true;
+  status.textContent = 'Zapisywanie hasła…';
+  try {
+    const { error } = await client.auth.updateUser({ password });
+    if (error) {
+      if (error.code === 'session_not_found' || error.status === 401) {
+        state.passwordRecovery = 'invalid';
+        render();
+      } else {
+        status.textContent = error.code === 'same_password'
+          ? 'Wybierz hasło inne niż poprzednie.'
+          : 'Nie udało się ustawić hasła. Sprawdź hasło lub poproś o nowy link.';
+      }
+      return;
+    }
+    state.passwordRecovery = 'done';
+    render();
+    await client.auth.signOut({ scope: 'local' });
+  } catch {
+    status.textContent = 'Nie udało się połączyć. Spróbuj ponownie.';
+  } finally {
+    button.disabled = false;
+  }
+}
+
 async function initSupabaseAuth() {
   const client = getSupabaseClient();
+  if (recoveryLink) {
+    const invalidate = () => {
+      if (state.passwordRecovery !== 'checking') return;
+      state.passwordRecovery = 'invalid';
+      render();
+    };
+    if (!client) {
+      invalidate();
+      return;
+    }
+    client.auth.onAuthStateChange((event, session) => {
+      if (event !== 'PASSWORD_RECOVERY' || !session) return;
+      state.passwordRecovery = 'ready';
+      render();
+    });
+    try {
+      const { data } = await client.auth.getSession();
+      // The SDK delivers its recovery event in a separate task.
+      if (data?.session) setTimeout(invalidate, 0);
+      else invalidate();
+    } catch {
+      invalidate();
+    }
+    return;
+  }
   if (!client) return;
 
   const { data } = await client.auth.getSession();
@@ -726,6 +868,7 @@ async function initSupabaseAuth() {
       state.staffLoading = false;
       state.records = [];
       state.selectedId = null;
+      resetCardSave();
       state.form = blankForm();
       state.unlocked = false;
       render();
@@ -762,10 +905,22 @@ function loadDraft(key = DRAFT_KEY) {
 }
 
 function saveDraft() {
-  if (!canEditCards()) return;
-  localStorage.setItem(staffDraftKey(), JSON.stringify({ selectedId: state.selectedId, form: state.form }));
-  const status = document.getElementById('cardState');
-  if (status) status.textContent = 'Karta robocza';
+  if (!canEditCards()) return false;
+  try {
+    localStorage.setItem(staffDraftKey(), JSON.stringify({
+      selectedId: state.selectedId,
+      revision: state.cardRevision,
+      pendingSave: state.pendingCardSave,
+      form: state.form
+    }));
+  } catch {
+    updateCardSaveStatus('Nie można zapisać szkicu w przeglądarce. Zostaw kartę otwartą.');
+    return false;
+  }
+  if (!state.savingCard && !state.cardNeedsRefresh) {
+    updateCardSaveStatus('Karta robocza');
+  }
+  return true;
 }
 
 function clearDraft() {
@@ -1296,7 +1451,9 @@ function render() {
       return;
     }
 
-    if (!state.unlocked) {
+    if (state.passwordRecovery) {
+      app.innerHTML = passwordRecoveryView();
+    } else if (!state.unlocked) {
       app.innerHTML = loginView();
     } else if (state.user && (state.staffLoading || !canReadStaffCards())) {
       app.innerHTML = staffAccessView();
@@ -1380,6 +1537,16 @@ function loginView() {
             <button class="btn secondary full-btn" id="registerBtn" ${state.authLoading ? 'disabled' : ''}>
               Poproś o dostęp
             </button>
+
+            <details class="clinic-details">
+              <summary>Nie pamiętam hasła</summary>
+              <form id="resetEmailForm" class="recovery-form">
+                <label class="label" for="resetEmail">Adres e-mail konta</label>
+                <input id="resetEmail" type="email" autocomplete="email" required>
+                <button type="submit" class="btn primary-btn">Wyślij link</button>
+              </form>
+              <p id="resetEmailStatus" class="small" role="status"></p>
+            </details>
 
             <div class="footer-note center">Tryb online: wspólna baza pacjentów</div>
           ` : `
@@ -1606,7 +1773,7 @@ function patientIdentityMarkup(title = 'Karta zabiegu') {
       </div>
       <div class="patient-identity-meta">
         ${form.visitDate ? `<span class="small">Data karty: ${escapeHtml(displayCardDate(form.visitDate))}</span>` : ''}
-        <span class="record-state" id="cardState">${state.selectedId && !loadDraft(staffDraftKey()) ? 'Zapisano' : 'Karta robocza'}</span>
+        <span class="record-state" role="status" id="cardState">${escapeHtml(cardSaveLabel())}</span>
       </div>
     </div>
   `;
@@ -2235,6 +2402,8 @@ function mainView() {
                   <button class="btn secondary" id="samePatientBtn">Nowa karta tego pacjenta</button>
                 </div>
               </div>
+              ${cardSaveRecoveryMarkup()}
+              ${cardHistoryMarkup()}
               <section id="plan-prep" class="plan-section" ${state.planSection === 'prep' ? '' : 'hidden'} aria-label="Przed zabiegiem">
                 <div class="stage-title">${clinicIcon('clipboard')}<h2>Przed zabiegiem</h2></div>
                 <div class="stage-overview">
@@ -3026,7 +3195,13 @@ function bindLibraryWeightInput() {
 }
 
 function bind() {
+  const newPassword = document.getElementById('newPasswordForm');
+  if (newPassword) newPassword.onsubmit = updateRecoveredPassword;
+  if (state.passwordRecovery) return;
+
   if (!state.unlocked) {
+    const resetEmail = document.getElementById('resetEmailForm');
+    if (resetEmail) resetEmail.onsubmit = requestPasswordReset;
     const loginBtn = document.getElementById('loginBtn');
     if (loginBtn) loginBtn.onclick = signInWithEmail;
 
@@ -3465,7 +3640,9 @@ function bind() {
 
   const newCard = document.getElementById('newBtn');
   if (newCard) newCard.onclick = () => {
+    if (!mayLeaveCard()) return;
     state.selectedId = null;
+    resetCardSave();
     state.form = blankForm();
     state.planSection = 'prep';
     clearDraft();
@@ -3473,7 +3650,13 @@ function bind() {
   };
 
   const sv = document.getElementById('saveBtn');
-  if (sv) sv.onclick = saveCurrent;
+  if (sv) {
+    sv.onclick = saveCurrent;
+    sv.disabled = state.savingCard || !canEditCards();
+  }
+  bindCardHistory();
+  const reloadCard = document.getElementById('reloadCurrentCard');
+  if (reloadCard) reloadCard.onclick = reloadCurrentCard;
 
   const pr = document.getElementById('printBtn');
   if (pr) {
@@ -3486,8 +3669,10 @@ function bind() {
   const same = document.getElementById('samePatientBtn');
   if (same) {
     same.onclick = () => {
+      if (!mayLeaveCard()) return;
       const f = state.form;
       state.selectedId = null;
+      resetCardSave();
       state.form = blankForm();
       Object.assign(state.form, {
         ownerName: f.ownerName,
@@ -3532,12 +3717,19 @@ function updateThemeButton() {
   if (button) button.textContent = getThemeLabel();
 }
 
+function mayLeaveCard() {
+  if (state.savingCard) return false;
+  const hasDraft = loadDraft(staffDraftKey()) || state.cardSaveStatus.startsWith('Nie można zapisać szkicu');
+  return !canEditCards() || !hasDraft || confirm('Ta karta ma niezapisany szkic. Czy przejść dalej i odrzucić szkic?');
+}
+
 async function handlePatientAction(event) {
   const open = event.target.closest('[data-open]');
   if (open) {
     const record = state.records.find((item) => item.id === open.dataset.open);
-    if (record) {
+    if (record && mayLeaveCard()) {
       state.selectedId = record.id;
+      resetCardSave(record.revision);
       state.form = JSON.parse(JSON.stringify(record.data));
       state.planSection = 'prep';
       clearDraft();
@@ -3547,7 +3739,7 @@ async function handlePatientAction(event) {
   }
 
   const remove = event.target.closest('[data-del]');
-  if (!remove || !canManageCards() || !confirm('Usunąć tę kartę?')) return;
+  if (!remove || state.savingCard || !canManageCards() || !confirm('Usunąć tę kartę?')) return;
   const id = remove.dataset.del;
   const client = getSupabaseClient();
   if (state.user) {
@@ -3568,6 +3760,7 @@ async function handlePatientAction(event) {
   if (!state.user) saveRecords();
   if (state.selectedId === id) {
     state.selectedId = null;
+    resetCardSave();
     state.form = blankForm();
     state.planSection = 'prep';
     state.entryMessage = '';
@@ -3580,95 +3773,224 @@ function isUuid(value) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value || ''));
 }
 
+function cardSaveLabel() {
+  if (state.cardSaveStatus) return state.cardSaveStatus;
+  if (!canEditCards()) return 'Tylko podgląd';
+  if (loadDraft(staffDraftKey()) || !state.selectedId) return 'Karta robocza';
+  return state.user ? 'Zapisano w bazie' : 'Zapisano lokalnie';
+}
+
+function updateCardSaveStatus(message) {
+  state.cardSaveStatus = message;
+  const status = document.getElementById('cardState');
+  if (status) status.textContent = cardSaveLabel();
+  const button = document.getElementById('saveBtn');
+  if (button) button.disabled = state.savingCard || !canEditCards();
+}
+
+function resetCardSave(revision = null, pending = null) {
+  state.cardRevision = revision;
+  state.pendingCardSave = pending;
+  state.cardSaveStatus = '';
+  state.cardNeedsRefresh = false;
+}
+
 async function saveCurrent() {
-  if (!canEditCards()) return;
-  const now = new Date().toISOString();
-  const client = getSupabaseClient();
+  if (!canEditCards() || state.savingCard) return;
+  state.savingCard = true;
+  updateCardSaveStatus('Zapisywanie…');
 
-  if (state.user) {
-    const userId = state.user.id;
-    if (!client) {
-      alert('Brak połączenia z bazą.');
-      return;
-    }
-    const payload = {
-      animal_name: state.form.animalName || '',
-      owner_name: state.form.ownerName || '',
-      species: state.form.species || '',
-      data_json: {
-        ...state.form,
-        updatedAt: now,
-        createdAt: state.form.createdAt || now
-      },
-      updated_by: state.user.id,
-      updated_at: now
-    };
-
-    let result;
-    if (state.selectedId && isUuid(state.selectedId)) {
-      result = await client
-        .from('patients')
-        .update(payload)
-        .eq('id', state.selectedId)
-        .select('id')
-        .single();
+  try {
+    if (state.user) {
+      await saveCloudCard();
     } else {
-      result = await client
-        .from('patients')
-        .insert({
-          ...payload,
-          created_by: state.user.id
-        })
-        .select('id')
-        .single();
+      saveLocalCard();
     }
+  } catch {
+    if (saveDraft()) updateCardSaveStatus('Zapis niepotwierdzony. Szkic zachowano do ponowienia.');
+  } finally {
+    state.savingCard = false;
+    updateCardSaveStatus(state.cardSaveStatus);
+    if (state.unlocked) render();
+  }
+}
 
-    if (state.user?.id !== userId) return;
-    if (result.error) {
-      alert('Nie udało się zapisać online: ' + result.error.message);
-      return;
-    }
-
-    state.selectedId = result.data.id;
-    clearDraft();
-    state.entryMessage = '';
-    await loadCloudRecords();
-    alert('Zapisano online');
-    render();
+async function saveCloudCard() {
+  const client = getSupabaseClient();
+  const userId = state.user.id;
+  if (!client) {
+    saveDraft();
+    updateCardSaveStatus('Brak połączenia. Szkic czeka na zapis.');
+    return;
+  }
+  if (state.selectedId && !state.cardRevision) {
+    state.cardNeedsRefresh = true;
+    saveDraft();
+    updateCardSaveStatus('Ten starszy szkic nie ma numeru wersji. Otwórz aktualną kartę po zabezpieczeniu zmian.');
     return;
   }
 
-  if (state.selectedId) {
-    state.records = state.records.map((r) =>
-      r.id === state.selectedId
-        ? {
-            ...r,
-            data: {
-              ...state.form,
-              updatedAt: now,
-              createdAt: state.form.createdAt || now
-            }
-          }
-        : r
-    );
-  } else {
-    const id = uid();
-    state.selectedId = id;
-    state.records.unshift({
-      id,
-      data: {
-        ...state.form,
-        createdAt: now,
-        updatedAt: now
-      }
-    });
+  const pending = state.pendingCardSave || {
+    cardId: state.selectedId || crypto.randomUUID(),
+    revision: state.cardRevision,
+    requestId: crypto.randomUUID(),
+    form: JSON.parse(JSON.stringify(state.form))
+  };
+  state.pendingCardSave = pending;
+  // Save the pending request before sending it, so a retry uses the same identifiers.
+  if (!saveDraft()) return;
+
+  const { data, error } = await client.rpc('save_patient_card', {
+    card_id: pending.cardId,
+    expected_revision: pending.revision,
+    request_id: pending.requestId,
+    card_data: pending.form
+  }).single();
+
+  if (state.user?.id !== userId || state.pendingCardSave !== pending) return;
+  if (error || !data) {
+    state.cardNeedsRefresh = error?.code === '40001';
+    const message = state.cardNeedsRefresh
+      ? 'Konflikt zapisu. Karta w bazie została zmieniona lub usunięta. Twój szkic jest zachowany.'
+      : error?.code === 'PGRST202'
+        ? 'Zapis wymaga aktualizacji skryptu w Supabase. Twój szkic jest zachowany.'
+        : 'Zapis niepotwierdzony. Twój szkic jest zachowany. Spróbuj ponownie.';
+    updateCardSaveStatus(message);
+    return;
   }
 
-  saveRecords();
-  clearDraft();
+  const hasNewEdits = JSON.stringify(state.form) !== JSON.stringify(pending.form);
+  const savedForm = {
+    ...pending.form,
+    createdAt: data.created_at,
+    updatedAt: data.updated_at
+  };
+  state.records = [{
+    ...state.records.find(record => record.id === data.id),
+    id: data.id,
+    revision: data.revision,
+    data: savedForm,
+    updatedByName: getDisplayUserName()
+  }, ...state.records.filter(record => record.id !== data.id)];
+  state.selectedId = data.id;
+  resetCardSave(data.revision);
   state.entryMessage = '';
-  alert('Zapisano lokalnie');
-  render();
+
+  if (hasNewEdits) {
+    state.form.createdAt = data.created_at;
+    state.form.updatedAt = data.updated_at;
+    if (saveDraft()) updateCardSaveStatus('Wcześniejsza wersja zapisana. Nowsze zmiany są w szkicu.');
+  } else {
+    state.form = JSON.parse(JSON.stringify(savedForm));
+    clearDraft();
+    updateCardSaveStatus('Zapisano w bazie');
+  }
+}
+
+function saveLocalCard() {
+  const now = new Date().toISOString();
+  const id = state.selectedId || uid();
+  const form = {
+    ...JSON.parse(JSON.stringify(state.form)),
+    createdAt: state.form.createdAt || now,
+    updatedAt: now
+  };
+  const saved = { id, data: form };
+  const previous = state.records.find(record => record.id === id);
+  const records = previous
+    ? state.records.map(record => record.id === id ? { ...record, ...saved } : record)
+    : [saved, ...state.records];
+  localStorage.setItem(APP_KEY, JSON.stringify(records));
+  state.records = records;
+  state.selectedId = id;
+  state.form = JSON.parse(JSON.stringify(form));
+  state.entryMessage = '';
+  clearDraft();
+  updateCardSaveStatus('Zapisano lokalnie');
+}
+
+function cardSaveRecoveryMarkup() {
+  if (!state.user || !state.cardNeedsRefresh) return '';
+  return `<div class="clinic-actions no-print">
+    <button type="button" class="btn secondary" id="reloadCurrentCard">Wczytaj aktualną kartę z bazy</button>
+    <span class="small">Jeśli potrzebujesz szkicu, możesz najpierw zapisać jego podgląd jako PDF.</span>
+  </div>`;
+}
+
+async function reloadCurrentCard(event) {
+  if (state.savingCard || !canEditCards() ||
+      !confirm('Wczytać kartę z bazy? To zastąpi szkic w tej przeglądarce.')) return;
+  const button = event.currentTarget;
+  const id = state.selectedId || state.pendingCardSave?.cardId;
+  const form = state.form;
+  const snapshot = JSON.stringify(form);
+  button.disabled = true;
+  try {
+    const loaded = await loadCloudRecords();
+    if (state.savingCard || state.form !== form || JSON.stringify(form) !== snapshot) return;
+    const record = loaded && state.records.find(item => item.id === id);
+    if (!record) {
+      alert('Nie znaleziono aktualnej karty lub nie udało się jej wczytać. Szkic zachowano.');
+      return;
+    }
+    state.selectedId = record.id;
+    state.form = JSON.parse(JSON.stringify(record.data));
+    resetCardSave(record.revision);
+    clearDraft();
+    render();
+  } catch {
+    alert('Nie udało się wczytać karty. Szkic zachowano.');
+  } finally {
+    button.disabled = false;
+  }
+}
+
+function cardHistoryMarkup() {
+  if (!state.user || !state.selectedId || !state.cardRevision) return '';
+  return `<details class="clinic-details card-history no-print" data-card-history>
+    <summary>Historia zapisów</summary>
+    <div class="small" role="status"></div>
+    <ul></ul>
+  </details>`;
+}
+
+function bindCardHistory() {
+  const details = document.querySelector('[data-card-history]');
+  if (!details) return;
+  const id = state.selectedId;
+  details.ontoggle = async () => {
+    if (!details.open) return;
+    const status = details.querySelector('[role="status"]');
+    const list = details.querySelector('ul');
+    const client = getSupabaseClient();
+    if (!client) {
+      status.textContent = 'Brak połączenia z bazą.';
+      return;
+    }
+    status.textContent = 'Wczytywanie…';
+    list.replaceChildren();
+    try {
+      const { data, error } = await client.from('patient_card_history')
+        .select('revision, changed_at, profile:profiles(full_name, username)')
+        .eq('patient_id', id)
+        .order('revision', { ascending: false })
+        .limit(20);
+      if (!details.isConnected || state.selectedId !== id) return;
+      if (error) {
+        status.textContent = 'Nie udało się wczytać historii.';
+        return;
+      }
+      status.textContent = data?.length ? 'Ostatnie zapisy' : 'Brak zapisów od włączenia historii.';
+      for (const version of data || []) {
+        const item = document.createElement('li');
+        const name = version.profile?.full_name || version.profile?.username || 'Użytkownik';
+        item.textContent = `Wersja ${version.revision} · ${new Date(version.changed_at).toLocaleString('pl-PL')} · ${name}`;
+        list.append(item);
+      }
+    } catch {
+      if (details.isConnected) status.textContent = 'Nie udało się wczytać historii.';
+    }
+  };
 }
 
 function exportBackup() {
