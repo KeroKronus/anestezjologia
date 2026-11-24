@@ -397,6 +397,8 @@ let state = {
   session: null,
   user: null,
   profile: null,
+  workspaceUserId: null,
+  staffLoading: false,
   syncStatus: '',
   authLoading: false
 };
@@ -468,45 +470,99 @@ function mapCloudRecord(row) {
   };
 }
 
+function canReadStaffCards() {
+  return Boolean(state.user && state.profile?.id === state.user.id &&
+    ['admin', 'pracownik', 'podglad'].includes(state.profile.role));
+}
+
+function canEditCards() {
+  return state.user ? canReadStaffCards() && state.profile.role !== 'podglad' : !hasCloudConfig();
+}
+
+function canManageCards() {
+  return state.user ? canReadStaffCards() && state.profile.role === 'admin' : !hasCloudConfig();
+}
+
+function hasCloudConfig() {
+  const { url, anonKey } = loadSupabaseConfig();
+  return Boolean(url && anonKey);
+}
+
+async function loadStaffWorkspace() {
+  const userId = state.user?.id;
+  if (!userId) return;
+  const changedUser = state.workspaceUserId !== userId;
+  const previousRole = state.profile?.role;
+  const hadAccess = canReadStaffCards();
+  state.staffLoading = true;
+  if (changedUser) {
+    state.workspaceUserId = userId;
+    state.profile = null;
+    state.records = [];
+    state.selectedId = null;
+    state.form = blankForm();
+    state.syncStatus = '';
+  }
+
+  await ensureProfile();
+  if (state.user?.id !== userId) return;
+  if (canReadStaffCards()) {
+    if (changedUser || !hadAccess || previousRole !== state.profile.role) {
+      const draft = canEditCards() ? loadDraft(staffDraftKey()) : null;
+      state.selectedId = draft?.selectedId ?? null;
+      state.form = draft?.form ?? blankForm();
+    }
+    await loadCloudRecords();
+  } else {
+    state.records = [];
+    state.selectedId = null;
+    state.form = blankForm();
+  }
+  if (state.user?.id === userId) state.staffLoading = false;
+}
+
 async function loadProfile() {
   const client = getSupabaseClient();
   if (!client || !state.user) return null;
 
+  const userId = state.user.id;
   const { data, error } = await client
     .from('profiles')
     .select('id, username, full_name, role')
-    .eq('id', state.user.id)
+    .eq('id', userId)
     .maybeSingle();
+
+  if (state.user?.id !== userId) return null;
 
   if (error) {
     console.warn('Profil:', error.message);
+    state.profile = null;
     state.syncStatus = 'Nie udało się wczytać profilu.';
     return null;
   }
 
+  if (state.syncStatus === 'Nie udało się wczytać profilu.') state.syncStatus = '';
   state.profile = data || null;
   return state.profile;
 }
 
-async function ensureProfile(fullName = '') {
+async function ensureProfile() {
   const client = getSupabaseClient();
-  if (!client || !state.user) return;
+  const user = state.user;
+  if (!client || !user) return;
 
-  const emailName = (state.user.email || '').split('@')[0] || 'uzytkownik';
-  const profile = {
-    id: state.user.id,
-    username: emailName,
-    full_name: fullName || state.user.user_metadata?.full_name || emailName
-  };
-
-  const { error } = await client.from('profiles').upsert(profile, { onConflict: 'id' });
-  if (error) console.warn('Upsert profilu:', error.message);
+  const profile = await loadProfile();
+  if (profile || state.user?.id !== user.id || state.syncStatus === 'Nie udało się wczytać profilu.') return;
+  const fullName = user.user_metadata?.full_name || user.email?.split('@')[0] || '';
+  const { error } = await client.from('profiles').insert({ id: user.id, full_name: fullName });
+  if (error && error.code !== '23505') console.warn('Nie udało się utworzyć profilu.');
   await loadProfile();
 }
 
 async function loadCloudRecords() {
   const client = getSupabaseClient();
-  if (!client || !state.user) return;
+  if (!client || !canReadStaffCards()) return;
+  const userId = state.user.id;
 
   state.syncStatus = 'Synchronizacja bazy...';
   const { data, error } = await client
@@ -524,6 +580,7 @@ async function loadCloudRecords() {
     `)
     .order('updated_at', { ascending: false });
 
+  if (state.user?.id !== userId) return;
   if (error) {
     console.error(error);
     state.syncStatus = 'Błąd synchronizacji: ' + error.message;
@@ -531,9 +588,8 @@ async function loadCloudRecords() {
   }
 
   state.records = (data || []).map(mapCloudRecord);
-  saveRecords();
 
-  if (!state.selectedId && state.records[0] && !loadDraft()) {
+  if (!state.selectedId && state.records[0] && (!canEditCards() || !loadDraft(staffDraftKey()))) {
     state.selectedId = state.records[0].id;
     state.form = JSON.parse(JSON.stringify(state.records[0].data));
   }
@@ -569,8 +625,7 @@ async function signInWithEmail() {
   state.session = data.session;
   state.user = data.user;
   state.unlocked = true;
-  await loadProfile();
-  await loadCloudRecords();
+  await loadStaffWorkspace();
   state.currentPage = initialClinicPage({ afterLogin: true });
   render();
 }
@@ -607,11 +662,10 @@ async function signUpWithEmail() {
 
   state.session = data.session;
   state.user = data.user;
-  if (state.user) await ensureProfile(fullName);
 
   if (state.session) {
     state.unlocked = true;
-    await loadCloudRecords();
+    await loadStaffWorkspace();
     state.currentPage = initialClinicPage({ afterLogin: true });
     render();
   } else {
@@ -622,10 +676,19 @@ async function signUpWithEmail() {
 
 async function signOut() {
   const client = getSupabaseClient();
-  if (client) await client.auth.signOut();
+  if (client) {
+    const { error } = await client.auth.signOut();
+    if (error) {
+      alert('Nie udało się wylogować. Spróbuj ponownie.');
+      return;
+    }
+  }
   state.session = null;
   state.user = null;
   state.profile = null;
+  state.workspaceUserId = null;
+  state.staffLoading = false;
+  state.records = [];
   state.unlocked = false;
   state.currentPage = 'home';
   state.selectedId = null;
@@ -644,29 +707,49 @@ async function initSupabaseAuth() {
     state.session = data.session;
     state.user = data.session.user;
     state.unlocked = true;
-    await loadProfile();
-    await loadCloudRecords();
+    await loadStaffWorkspace();
     state.currentPage = initialClinicPage();
     render();
   }
 
-  client.auth.onAuthStateChange(async (_event, session) => {
-    const wasUnlocked = state.unlocked;
-    state.session = session || null;
-    state.user = session?.user || null;
-    state.unlocked = Boolean(session);
-    if (session) {
-      await loadProfile();
-      await loadCloudRecords();
-      if (!wasUnlocked) state.currentPage = initialClinicPage({ afterLogin: _event === 'SIGNED_IN' });
+  client.auth.onAuthStateChange((event, session) => {
+    if (event === 'INITIAL_SESSION') return;
+    if (!session) {
+      state.session = null;
+      state.user = null;
+      state.profile = null;
+      state.workspaceUserId = null;
+      state.staffLoading = false;
+      state.records = [];
+      state.selectedId = null;
+      state.form = blankForm();
+      state.unlocked = false;
+      render();
+      return;
     }
-    render();
+    const changedUser = state.user?.id !== session.user.id;
+    state.session = session;
+    state.user = session.user;
+    state.unlocked = true;
+    if (!changedUser && event !== 'TOKEN_REFRESHED') return;
+    if (changedUser) render();
+    setTimeout(async () => {
+      if (state.user?.id !== session.user.id) return;
+      await loadStaffWorkspace();
+      if (state.user?.id !== session.user.id) return;
+      if (changedUser) state.currentPage = initialClinicPage({ afterLogin: event === 'SIGNED_IN' });
+      render();
+    }, 0);
   });
 }
 
-function loadDraft() {
+function staffDraftKey() {
+  return state.user ? `${DRAFT_KEY}:${state.user.id}` : DRAFT_KEY;
+}
+
+function loadDraft(key = DRAFT_KEY) {
   try {
-    const saved = JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null');
+    const saved = JSON.parse(localStorage.getItem(key) || 'null');
     if (!saved || typeof saved !== 'object' || Array.isArray(saved)) return null;
     return saved.form ? saved : { selectedId: null, form: saved };
   } catch {
@@ -675,13 +758,14 @@ function loadDraft() {
 }
 
 function saveDraft() {
-  localStorage.setItem(DRAFT_KEY, JSON.stringify({ selectedId: state.selectedId, form: state.form }));
+  if (!canEditCards()) return;
+  localStorage.setItem(staffDraftKey(), JSON.stringify({ selectedId: state.selectedId, form: state.form }));
   const status = document.getElementById('cardState');
   if (status) status.textContent = 'Karta robocza';
 }
 
 function clearDraft() {
-  localStorage.removeItem(DRAFT_KEY);
+  if (canEditCards()) localStorage.removeItem(staffDraftKey());
 }
 
 function getPin() {
@@ -804,6 +888,7 @@ function buildProtocolPreview(protocol, species, weight) {
 }
 
 function addProtocolToPlan() {
+  if (!canEditCards()) return;
   const protocol = getSelectedProtocol();
   const species = state.doseSpecies;
   const weight = parseMass(state.doseWeight);
@@ -1209,6 +1294,8 @@ function render() {
 
     if (!state.unlocked) {
       app.innerHTML = loginView();
+    } else if (state.user && (state.staffLoading || !canReadStaffCards())) {
+      app.innerHTML = staffAccessView();
     } else {
       const views = {
         home: homeView,
@@ -1234,9 +1321,22 @@ function render() {
   }
 }
 
+function staffAccessView() {
+  const heading = state.staffLoading ? 'Sprawdzanie dostępu' : 'Konto oczekuje na dostęp';
+  const message = state.staffLoading ? 'Wczytujemy uprawnienia personelu.'
+    : state.syncStatus || 'Administrator kliniki musi zatwierdzić Twoje konto.';
+  return `<div class="login"><div class="card login-card"><div class="card-body">
+    <h1>${heading}</h1><p role="status">${escapeHtml(message)}</p>
+    <div class="clinic-actions">
+      <button type="button" class="btn primary-btn" id="retryStaffAccess" ${state.staffLoading ? 'disabled' : ''}>Sprawdź ponownie</button>
+      <button type="button" class="btn secondary" id="logoutBtn">Wyloguj</button>
+    </div>
+  </div></div></div>`;
+}
+
 function loginView() {
   const cfg = loadSupabaseConfig();
-  const onlineMode = isSupabaseConfigured();
+  const onlineMode = hasCloudConfig();
 
   return `
     <div class="login">
@@ -1273,7 +1373,7 @@ function loginView() {
             <div class="space-8"></div>
 
             <button class="btn secondary full-btn" id="registerBtn" ${state.authLoading ? 'disabled' : ''}>
-              Utwórz konto
+              Poproś o dostęp
             </button>
 
             <div class="footer-note center">Tryb online: wspólna baza pacjentów</div>
@@ -1430,7 +1530,7 @@ function patientRecordsMarkup() {
                 ${data.ownerName ? `<div>Właściciel: ${escapeHtml(data.ownerName)}</div>` : ''}
                 ${record.createdByName ? `<div>Autor: ${escapeHtml(record.createdByName)}</div>` : ''}
                 ${record.updatedByName ? `<div>Edycja: ${escapeHtml(record.updatedByName)}</div>` : ''}
-                <button class="btn secondary patient-delete" type="button" data-del="${id}" aria-label="Usuń kartę: ${name}">Usuń kartę</button>
+                ${canManageCards() ? `<button class="btn secondary patient-delete" type="button" data-del="${id}" aria-label="Usuń kartę: ${name}">Usuń kartę</button>` : ''}
               </div>
             </details>
           </article>
@@ -1446,7 +1546,7 @@ function patientBrowserMarkup() {
       <div class="card-body">
         <div class="clinic-title">
           <div><h1>Karty pacjentów</h1><p class="small">${escapeHtml(state.syncStatus || (state.user ? 'Online' : 'Tryb lokalny'))}</p></div>
-          <button class="btn primary-btn clinic-icon-button" type="button" id="newBtn">${clinicIcon('plus')} Nowa karta</button>
+          ${canEditCards() ? `<button class="btn primary-btn clinic-icon-button" type="button" id="newBtn">${clinicIcon('plus')} Nowa karta</button>` : ''}
         </div>
         <div class="patient-filters">
           <label class="patient-search">
@@ -1461,15 +1561,15 @@ function patientBrowserMarkup() {
           </select>
         </div>
         <div id="patientResults">${patientRecordsMarkup()}</div>
-        <details class="clinic-details patient-utilities">
+        ${canManageCards() ? `<details class="clinic-details patient-utilities">
           <summary>Kopie zapasowe i tryb lokalny</summary>
           <div class="clinic-actions">
             <button class="btn secondary" id="exportBtn" type="button">Eksport kopii</button>
-            <label class="btn secondary import-label">Import kopii<input id="importInput" type="file" accept="application/json" hidden></label>
+            ${!state.user ? `<label class="btn secondary import-label">Import kopii<input id="importInput" type="file" accept="application/json" hidden></label>` : ''}
           </div>
-          <label class="label" for="pinChange">PIN lokalny / awaryjny</label>
-          <input id="pinChange" type="password" inputmode="numeric" value="${escapeHtml(getPin())}">
-        </details>
+          ${!state.user ? `<label class="label" for="pinChange">PIN lokalny / awaryjny</label>
+          <input id="pinChange" type="password" inputmode="numeric" value="${escapeHtml(getPin())}">` : ''}
+        </details>` : ''}
       </div>
     </section>
   `;
@@ -1497,7 +1597,7 @@ function patientIdentityMarkup(title = 'Karta zabiegu') {
       </div>
       <div class="patient-identity-meta">
         ${form.visitDate ? `<span class="small">Data karty: ${escapeHtml(displayCardDate(form.visitDate))}</span>` : ''}
-        <span class="record-state" id="cardState">${state.selectedId && !loadDraft() ? 'Zapisano' : 'Karta robocza'}</span>
+        <span class="record-state" id="cardState">${state.selectedId && !loadDraft(staffDraftKey()) ? 'Zapisano' : 'Karta robocza'}</span>
       </div>
     </div>
   `;
@@ -1885,7 +1985,7 @@ function settingsView() {
           </fieldset>
 
           <h2 class="settings-heading">Połączenie i dostęp</h2>
-          <div class="settings-group">
+          ${canManageCards() ? `<div class="settings-group">
             <label class="label" for="supabaseUrlInput">Supabase Project URL</label>
             <input id="supabaseUrlInput" value="${escapeHtml(cfg.url)}" placeholder="https://xxxxx.supabase.co">
           </div>
@@ -1895,20 +1995,21 @@ function settingsView() {
             <textarea id="supabaseAnonInput" placeholder="eyJ...">${escapeHtml(cfg.anonKey)}</textarea>
           </div>
 
-          <button class="btn primary-btn full-btn" id="saveSupabaseConfigBtn">Zapisz konfigurację Supabase</button>
+          <button class="btn primary-btn full-btn" id="saveSupabaseConfigBtn">Zapisz konfigurację Supabase</button>` : ''}
 
           <div class="space-12"></div>
 
           <div class="small">
             Status: ${onlineMode ? `online jako ${escapeHtml(getDisplayUserName())}` : 'tryb lokalny / brak Supabase'}<br>
+            ${state.user ? `Rola: ${{ admin: 'Administrator', pracownik: 'Pracownik', podglad: 'Tylko podgląd' }[state.profile.role]}<br>` : ''}
             ${escapeHtml(state.syncStatus || '')}
           </div>
 
-          <div class="section-separator">
+          ${!state.user ? `<div class="section-separator">
             <label class="label">PIN lokalny / awaryjny</label>
             <input id="pinChangeSettings" type="password" inputmode="numeric" value="${escapeHtml(getPin())}">
             <div class="small">PIN działa tylko w trybie lokalnym. Przy Supabase główne zabezpieczenie to konto użytkownika.</div>
-          </div>
+          </div>` : ''}
           <div class="section-separator mobile-credits">
             <button class="btn secondary" type="button" data-nav="podziekowania">Podziękowania</button>
           </div>
@@ -2207,6 +2308,7 @@ const vitalFields = [
 ];
 
 function procedureEntryMarkup() {
+  if (!canEditCards()) return '<p class="small">Tryb podglądu. Zmiany są niedostępne.</p>';
   return `
     <div class="procedure-actions no-print">
       <details class="clinic-details">
@@ -2354,6 +2456,7 @@ function monitorView() {
 
 function addProcedureEntry(event) {
   event.preventDefault();
+  if (!canEditCards()) return;
   const form = event.currentTarget;
   const entry = Object.fromEntries(new FormData(form));
   for (const key of Object.keys(entry)) entry[key] = entry[key].trim();
@@ -2697,6 +2800,7 @@ function refreshVitalsAlertsOnly() {
 }
 
 function addDoseToPlan() {
+  if (!canEditCards()) return;
   const weight = parseMass(state.doseWeight);
   const mgKg = Number(state.doseMgKg || 0);
   const mgMl = Number(state.doseMgMl || 0);
@@ -2789,7 +2893,7 @@ function bind() {
     if (registerBtn) registerBtn.onclick = signUpWithEmail;
 
     const unlockBtn = document.getElementById('unlockBtn');
-    if (unlockBtn) {
+    if (unlockBtn && !hasCloudConfig()) {
       unlockBtn.onclick = () => {
         const pinInput = document.getElementById('pinInput');
         if (pinInput && pinInput.value === getPin()) {
@@ -2802,6 +2906,24 @@ function bind() {
       };
     }
     return;
+  }
+
+  if (state.user && (state.staffLoading || !canReadStaffCards())) {
+    const logout = document.getElementById('logoutBtn');
+    if (logout) logout.onclick = signOut;
+    const retry = document.getElementById('retryStaffAccess');
+    if (retry) retry.onclick = async () => {
+      const loading = loadStaffWorkspace();
+      render();
+      await loading;
+      render();
+    };
+    return;
+  }
+
+  if (!canEditCards()) {
+    document.querySelectorAll('[data-field], [data-temp], [data-drug], [data-vitals], #saveBtn, #samePatientBtn, #quickVitalEntry, #addDoseToPlanBtn, #addProtocolToPlanBtn')
+      .forEach(element => { element.disabled = true; });
   }
 
   document.querySelectorAll('[data-nav]').forEach((el) => {
@@ -3251,7 +3373,7 @@ function bind() {
 function initialClinicPage({ afterLogin = false } = {}) {
   if (!window.matchMedia('(max-width: 640px)').matches) return 'home';
   if (afterLogin) return 'launcher';
-  return state.selectedId || loadDraft() ? 'plan' : 'home';
+  return state.selectedId || loadDraft(staffDraftKey()) ? 'plan' : 'home';
 }
 
 function showClinicPage(page) {
@@ -3282,19 +3404,25 @@ async function handlePatientAction(event) {
   }
 
   const remove = event.target.closest('[data-del]');
-  if (!remove || !confirm('Usunąć tę kartę?')) return;
+  if (!remove || !canManageCards() || !confirm('Usunąć tę kartę?')) return;
   const id = remove.dataset.del;
   const client = getSupabaseClient();
-  if (client && state.user) {
-    const { error } = await client.from('patients').delete().eq('id', id);
-    if (error) {
-      alert('Nie udało się usunąć z bazy online: ' + error.message);
+  if (state.user) {
+    const userId = state.user.id;
+    if (!client) {
+      alert('Brak połączenia z bazą.');
+      return;
+    }
+    const { data, error } = await client.from('patients').delete().eq('id', id).select('id').maybeSingle();
+    if (state.user?.id !== userId) return;
+    if (error || !data) {
+      alert('Nie udało się usunąć z bazy online.' + (error ? ' ' + error.message : ''));
       return;
     }
   }
 
   state.records = state.records.filter((r) => r.id !== id);
-  saveRecords();
+  if (!state.user) saveRecords();
   if (state.selectedId === id) {
     state.selectedId = null;
     state.form = blankForm();
@@ -3310,10 +3438,16 @@ function isUuid(value) {
 }
 
 async function saveCurrent() {
+  if (!canEditCards()) return;
   const now = new Date().toISOString();
   const client = getSupabaseClient();
 
-  if (client && state.user) {
+  if (state.user) {
+    const userId = state.user.id;
+    if (!client) {
+      alert('Brak połączenia z bazą.');
+      return;
+    }
     const payload = {
       animal_name: state.form.animalName || '',
       owner_name: state.form.ownerName || '',
@@ -3346,6 +3480,7 @@ async function saveCurrent() {
         .single();
     }
 
+    if (state.user?.id !== userId) return;
     if (result.error) {
       alert('Nie udało się zapisać online: ' + result.error.message);
       return;
@@ -3394,6 +3529,7 @@ async function saveCurrent() {
 }
 
 function exportBackup() {
+  if (!canManageCards()) return;
   const blob = new Blob([JSON.stringify(state.records, null, 2)], {
     type: 'application/json'
   });
