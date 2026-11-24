@@ -2,6 +2,7 @@ const APP_KEY = 'anestezjologia-techwet-v2';
 const PIN_KEY = 'anestezjologia-pin-v1';
 const DRAFT_KEY = 'anestezjologia-draft-v1';
 const THEME_KEY = 'anestezjologia-theme-v1';
+const ACCENT_KEY = 'anestezjologia-accent-v1';
 const SUPABASE_CONFIG_KEY = 'anestezjologia-supabase-config-v2';
 
 // Uzupełnij po utworzeniu projektu w Supabase. Anon key jest kluczem publicznym.
@@ -359,6 +360,7 @@ const blankForm = () => ({
   surgeryEnd: '',
   surgeon: '',
   assistant: '',
+  recoveryNotes: '',
   drugTable: drugRows(),
   intraopDrugs: intraRows(),
   vitals: vitalsTemplate(),
@@ -376,6 +378,10 @@ let state = {
   unlocked: false,
   currentPage: 'home',
   theme: loadTheme(),
+  accent: localStorage.getItem(ACCENT_KEY) || 'default',
+  planSection: 'prep',
+  doseFromCard: false,
+  entryMessage: '',
   doseTab: 'calculator',
   selectedProtocolId: '',
   doseSpecies: '',
@@ -629,6 +635,8 @@ async function signOut() {
   state.currentPage = 'home';
   state.selectedId = null;
   state.form = blankForm();
+  state.entryMessage = '';
+  state.planSection = 'prep';
   render();
 }
 
@@ -670,6 +678,8 @@ function loadDraft() {
 
 function saveDraft() {
   localStorage.setItem(DRAFT_KEY, JSON.stringify({ selectedId: state.selectedId, form: state.form }));
+  const status = document.getElementById('cardState');
+  if (status) status.textContent = 'Karta robocza';
 }
 
 function clearDraft() {
@@ -693,7 +703,8 @@ function saveTheme(theme) {
 }
 
 function applyTheme() {
-  document.body.setAttribute('data-theme', state.theme);
+  document.body.dataset.theme = state.theme;
+  document.body.dataset.accent = state.accent;
 }
 
 
@@ -1200,20 +1211,18 @@ function render() {
 
     if (!state.unlocked) {
       app.innerHTML = loginView();
-    } else if (state.currentPage === 'home') {
-      app.innerHTML = homeView();
-    } else if (state.currentPage === 'plan') {
-      app.innerHTML = mainView();
-    } else if (state.currentPage === 'dawki') {
-      app.innerHTML = dosesView();
-    } else if (state.currentPage === 'biblioteka') {
-      app.innerHTML = libraryView();
-    } else if (state.currentPage === 'ustawienia') {
-      app.innerHTML = settingsView();
-    } else if (state.currentPage === 'podziekowania') {
-      app.innerHTML = thanksView();
-    } else if (state.currentPage === 'printPreview') {
-      app.innerHTML = printPreviewView();
+    } else {
+      const views = {
+        home: homeView,
+        plan: mainView,
+        dawki: dosesView,
+        biblioteka: libraryView,
+        monitor: monitorView,
+        ustawienia: settingsView,
+        podziekowania: thanksView,
+        printPreview: printPreviewView
+      };
+      app.innerHTML = clinicShell(views[state.currentPage]());
     }
 
     bind();
@@ -1236,7 +1245,7 @@ function loginView() {
         <div class="card-body">
           <div class="header login-header">
             <div class="app-icon-wrap">
-              <img src="icons/icon-192.png" alt="Ikona aplikacji" class="app-icon">
+              <span class="clinic-mark" aria-hidden="true">+</span>
             </div>
             <h1>${APP_NAME}</h1>
             <div class="sub">${AUTHOR}</div>
@@ -1286,53 +1295,122 @@ function loginView() {
   `;
 }
 
-function homeView() {
+function clinicShell(content) {
+  const pages = [
+    ['home', 'Karty pacjentów'],
+    ['dawki', 'Obliczanie dawek leków'],
+    ['biblioteka', 'Biblioteka leków'],
+    ['monitor', 'Monitor zabiegu'],
+    ['ustawienia', 'Ustawienia']
+  ];
+  const active = ['plan', 'printPreview'].includes(state.currentPage) ? 'home' : state.currentPage;
+
   return `
-    <div class="app">
-      <div class="topbar">
-        <div>
-          <div class="topbar-title">${APP_NAME}</div>
-          <div class="topbar-sub">${state.user ? `Zalogowany: ${escapeHtml(getDisplayUserName())}` : 'Wybierz moduł'}</div>
+    <div class="clinic-shell">
+      <header class="clinic-header no-print">
+        <button class="clinic-brand" type="button" data-nav="home">
+          <span class="clinic-mark" aria-hidden="true">+</span>
+          <span>${APP_NAME}<small>Weterynaria</small></span>
+        </button>
+        <button class="clinic-theme" type="button" id="openAppearance">${escapeHtml(getThemeLabel())}</button>
+      </header>
+      <nav class="clinic-nav no-print" aria-label="Główne menu">
+        ${pages.map(([page, label]) => `
+          <button type="button" data-nav="${page}" ${active === page ? 'aria-current="page"' : ''}>${label}</button>
+        `).join('')}
+        <button type="button" data-nav="podziekowania" class="clinic-credits" ${active === 'podziekowania' ? 'aria-current="page"' : ''}>Podziękowania</button>
+      </nav>
+      <main class="clinic-content" id="clinicContent">${content}</main>
+    </div>
+  `;
+}
+
+function patientRecordsMarkup() {
+  const records = filtered();
+  if (!records.length) {
+    return `<p class="small">${state.query.trim() ? 'Brak kart pasujących do wyszukiwania.' : 'Brak zapisanych kart.'}</p>`;
+  }
+
+  return `
+    <div class="patient-list">
+      <div class="patient-list-head" aria-hidden="true"><span>Pacjent</span><span>Zabieg</span><span>Karta</span><span></span></div>
+      ${records.map((record) => {
+        const data = record.data;
+        const id = escapeHtml(record.id);
+        const name = escapeHtml(data.animalName || 'Pacjent');
+        const details = [displaySpecies(data.species), data.weight && `${data.weight} kg`].filter(Boolean).join(' · ');
+        return `
+          <article class="patient-list-row ${state.selectedId === record.id ? 'is-current' : ''}">
+            <div><button type="button" class="patient-open" data-open="${id}" aria-label="Otwórz kartę: ${name}">${name}</button>
+            ${details ? `<div class="small">${escapeHtml(details)}</div>` : ''}</div>
+            <div>${escapeHtml(data.procedureAsa || '—')}</div>
+            <div class="small"><span class="record-state">Zapisano</span>${data.visitDate ? `<div>${escapeHtml(data.visitDate)}</div>` : ''}
+            ${data.ownerName ? `<div>${escapeHtml(data.ownerName)}</div>` : ''}
+            ${record.createdByName ? `<div>Autor: ${escapeHtml(record.createdByName)}</div>` : ''}
+            ${record.updatedByName ? `<div>Edycja: ${escapeHtml(record.updatedByName)}</div>` : ''}</div>
+            <button class="btn secondary patient-delete" type="button" data-del="${id}" aria-label="Usuń kartę: ${name}">Usuń</button>
+          </article>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+function patientBrowserMarkup() {
+  return `
+    <section class="card patient-browser no-print">
+      <div class="card-body">
+        <div class="clinic-title">
+          <div><h1>Karty pacjentów</h1><p class="small">${escapeHtml(state.syncStatus || (state.user ? 'Online' : 'Tryb lokalny'))}</p></div>
+          <button class="btn primary-btn" type="button" id="newBtn">+ Nowa karta</button>
         </div>
-        <div class="theme-pill">${getThemeLabel()}</div>
+        <label class="label" for="searchInput">Szukaj karty</label>
+        <input id="searchInput" type="search" placeholder="Pacjent, właściciel lub zabieg" value="${escapeHtml(state.query)}">
+        <div id="patientResults">${patientRecordsMarkup()}</div>
+        <details class="clinic-details">
+          <summary>Kopie zapasowe i tryb lokalny</summary>
+          <div class="clinic-actions">
+            <button class="btn secondary" id="exportBtn" type="button">Eksport kopii</button>
+            <label class="btn secondary import-label">Import kopii<input id="importInput" type="file" accept="application/json" hidden></label>
+          </div>
+          <label class="label" for="pinChange">PIN lokalny / awaryjny</label>
+          <input id="pinChange" type="password" inputmode="numeric" value="${escapeHtml(getPin())}">
+        </details>
       </div>
+    </section>
+  `;
+}
 
-      <div class="hero-card">
-        <div class="hero-title">Panel główny</div>
-        <div class="hero-sub">Wybierz, co chcesz zrobić w aplikacji</div>
+function displaySpecies(species) {
+  return species === 'Krolik' ? 'Królik' : species;
+}
+
+function patientIdentityMarkup(title = 'Karta zabiegu') {
+  const form = state.form;
+  const details = [displaySpecies(form.species), form.weight && `${form.weight} kg`].filter(Boolean).join(' · ');
+  const name = escapeHtml(form.animalName || 'Nowy pacjent');
+  return `
+    <div class="patient-identity">
+      <div><p class="small">${title}${form.procedureAsa ? ` · ${escapeHtml(form.procedureAsa)}` : ''}</p>
+        <h1>${name}</h1>
+        <p>${escapeHtml(details || 'Uzupełnij gatunek i masę na karcie.')}</p>
       </div>
+      <span class="record-state" id="cardState">${state.selectedId && !loadDraft() ? 'Zapisano' : 'Karta robocza'}</span>
+    </div>
+  `;
+}
 
-      <div class="menu-grid">
-        <button class="menu-card menu-card-plan" data-nav="plan">
-          <div class="menu-icon">🩺</div>
-          <div class="menu-title">1. Plan anestezjologiczny</div>
-          <div class="menu-sub">Karty pacjentów, przebieg zabiegu, parametry i zapis danych</div>
-        </button>
-
-        <button class="menu-card menu-card-dose" data-nav="dawki">
-          <div class="menu-icon">💉</div>
-          <div class="menu-title">Obliczanie dawek leków</div>
-          <div class="menu-sub">Dawki, premedykacja i gotowe protokoły</div>
-        </button>
-
-        <button class="menu-card menu-card-library" data-nav="biblioteka">
-          <div class="menu-icon">📚</div>
-          <div class="menu-title">3. Biblioteka leków</div>
-          <div class="menu-sub">Baza leków z szybkim przeliczeniem dawki</div>
-        </button>
-
-        <button class="menu-card menu-card-settings" data-nav="ustawienia">
-          <div class="menu-icon">⚙️</div>
-          <div class="menu-title">4. Ustawienia</div>
-          <div class="menu-sub">Konta, Supabase, motyw i tryb awaryjny</div>
-        </button>
-
-        <button class="menu-card menu-card-thanks" data-nav="podziekowania">
-          <div class="menu-icon">🙏</div>
-          <div class="menu-title">5. Szczególne podziękowania</div>
-          <div class="menu-sub">Autor aplikacji i podziękowania</div>
-        </button>
+function homeView() {
+  const form = state.form;
+  return `
+    <div class="app clinic-home">
+      <div class="home-current card card-body">
+        <div><div class="small">Aktualna karta</div><h2>${escapeHtml(form.animalName || 'Nowy pacjent')}</h2>
+          ${form.species ? `<div class="small">${escapeHtml(displaySpecies(form.species))}${form.weight ? ` · ${escapeHtml(form.weight)} kg` : ''}</div>` : ''}
+        </div>
+        <button class="btn secondary" type="button" data-nav="plan">Otwórz kartę</button>
       </div>
+      ${patientBrowserMarkup()}
     </div>
   `;
 }
@@ -1357,7 +1435,7 @@ function dosesView() {
   return `
     <div class="app">
       <div class="toolbar">
-        <button class="btn secondary" id="backHomeBtn">Powrot do menu</button>
+        <button class="btn secondary" id="backHomeBtn">${state.doseFromCard ? 'Wróć do karty' : 'Wróć do kart pacjentów'}</button>
       </div>
 
       <div class="card">
@@ -1666,7 +1744,7 @@ function settingsView() {
   return `
     <div class="app">
       <div class="toolbar">
-        <button class="btn secondary" id="backHomeBtn">Powrot do menu</button>
+        <button class="btn secondary" id="backHomeBtn">Wróć do kart pacjentów</button>
         ${onlineMode && state.user ? `<button class="btn danger" id="logoutBtn">Wyloguj</button>` : ''}
       </div>
 
@@ -1675,11 +1753,20 @@ function settingsView() {
           <h3>Ustawienia</h3>
 
           <div class="settings-group">
-            <label class="label">Motyw aplikacji</label>
+            <label class="label" for="themeSelect">Motyw aplikacji</label>
             <select id="themeSelect">
               <option value="light" ${state.theme === 'light' ? 'selected' : ''}>Jasny</option>
               <option value="dark" ${state.theme === 'dark' ? 'selected' : ''}>Ciemny</option>
               <option value="pink" ${state.theme === 'pink' ? 'selected' : ''}>Różowy</option>
+            </select>
+          </div>
+
+          <div class="settings-group">
+            <label class="label" for="accentSelect">Kolor akcentu</label>
+            <select id="accentSelect">
+              ${[['default', 'Domyślny dla motywu'], ['navy', 'Granatowy'], ['teal', 'Turkusowy']].map(([value, label]) => `
+                <option value="${value}" ${state.accent === value ? 'selected' : ''}>${label}</option>
+              `).join('')}
             </select>
           </div>
 
@@ -1707,6 +1794,9 @@ function settingsView() {
             <input id="pinChangeSettings" type="password" inputmode="numeric" value="${escapeHtml(getPin())}">
             <div class="small">PIN działa tylko w trybie lokalnym. Przy Supabase główne zabezpieczenie to konto użytkownika.</div>
           </div>
+          <div class="section-separator mobile-credits">
+            <button class="btn secondary" type="button" data-nav="podziekowania">Podziękowania</button>
+          </div>
         </div>
       </div>
     </div>
@@ -1717,7 +1807,7 @@ function thanksView() {
   return `
     <div class="app">
       <div class="toolbar">
-        <button class="btn secondary" id="backHomeBtn">Powrot do menu</button>
+        <button class="btn secondary" id="backHomeBtn">Wróć do kart pacjentów</button>
       </div>
 
       <div class="card">
@@ -1758,73 +1848,25 @@ function filtered() {
 function mainView() {
   return `
     <div class="app">
-      <div class="toolbar no-print">
-        <button class="btn secondary" id="backHomeBtn">Powrot do menu</button>
-      </div>
-
-      <div class="layout">
-        <div class="card no-print">
-          <div class="card-body">
-            <h3>Karty pacjentow</h3>
-            <div class="small">${escapeHtml(state.syncStatus || (state.user ? 'Online' : 'Tryb lokalny'))}</div>
-            <div class="space-8"></div>
-            <input id="searchInput" placeholder="Szukaj..." value="${escapeHtml(state.query)}">
-            <div class="space-12"></div>
-            <button class="btn full-btn" id="newBtn">Nowa karta</button>
-            <div class="space-14"></div>
-
-            ${filtered()
-              .map(
-                (r) => `
-              <div class="record ${state.selectedId === r.id ? 'active' : ''}" data-open="${r.id}">
-                <div><strong>${escapeHtml(r.data.animalName || 'Pacjent')}</strong></div>
-                <div class="small">${escapeHtml(r.data.visitDate || '')} • ${escapeHtml(r.data.ownerName || '')}</div>
-                <div class="badges">
-                  <span class="badge">${escapeHtml((r.data.species || '') + (r.data.breed ? ` / ${r.data.breed}` : ''))}</span>
-                  <span class="badge">${escapeHtml(r.data.weight || '')}</span>
-                </div>
-                <div class="small record-note">${escapeHtml(r.data.procedureAsa || '')}</div>
-                ${r.createdByName ? `<div class="small">Dodano przez: ${escapeHtml(r.createdByName)}${r.updatedByName ? ` • Edycja: ${escapeHtml(r.updatedByName)}` : ''}</div>` : ''}
-                <div class="record-actions">
-                  <button class="btn secondary openBtn" data-open="${r.id}" type="button">Otworz</button>
-                  <button class="btn danger delBtn" data-del="${r.id}" type="button">Usun</button>
-                </div>
-              </div>
-            `
-              )
-              .join('')}
-
-            <div class="section-separator">
-              <div class="small"><strong>Prywatnosc, kopia i tryb lokalny</strong></div>
-              <div class="space-8"></div>
-              <button class="btn secondary full-btn" id="exportBtn">Eksport kopii</button>
-              <div class="space-8"></div>
-              <label class="btn secondary full-btn import-label">
-                Import kopii
-                <input id="importInput" type="file" accept="application/json" style="display:none">
-              </label>
-              <div class="space-8"></div>
-              <label class="label">PIN lokalny / awaryjny</label>
-              <input id="pinChange" type="password" inputmode="numeric" value="${escapeHtml(getPin())}">
-            </div>
-          </div>
-        </div>
+      <div class="layout clinic-plan-layout">
+        ${patientBrowserMarkup()}
 
         <div>
-          <div class="toolbar no-print">
-            <button class="btn primary-btn" id="saveBtn">Zapisz</button>
-            <button class="btn secondary" id="printBtn">Podglad wydruku</button>
-            <button class="btn secondary" id="samePatientBtn">Nowa karta tego pacjenta</button>
-          </div>
-
           <div class="card">
             <div class="card-body">
-              <div class="header">
-                <div class="sub">${escapeHtml(state.form.clinicName)}</div>
-                <h1>${APP_NAME}</h1>
-                <div class="sub">Autorstwo: ${AUTHOR}</div>
+              <div id="planIdentity">${patientIdentityMarkup()}</div>
+              <nav class="plan-steps" aria-label="Etapy karty">
+                ${[['prep', 'Przed zabiegiem'], ['procedure', 'Przebieg'], ['recovery', 'Wybudzenie']].map(([id, label]) => `
+                  <button type="button" data-plan-section="${id}" aria-controls="plan-${id}" aria-pressed="${state.planSection === id}">${label}</button>
+                `).join('')}
+              </nav>
+              <div class="clinic-actions plan-toolbar no-print">
+                <button class="btn primary-btn" id="saveBtn">Zapisz</button>
+                <button class="btn secondary" id="printBtn">Podgląd wydruku</button>
+                <button class="btn secondary" id="samePatientBtn">Nowa karta tego pacjenta</button>
               </div>
-
+              <section id="plan-prep" class="plan-section" ${state.planSection === 'prep' ? '' : 'hidden'} aria-label="Przed zabiegiem">
+                <div class="clinic-actions"><button class="btn secondary" id="doseFromCard" type="button">Obliczanie dawek leków</button></div>
               <div class="grid g4">
                 <div>
                   <label class="label">Data karty</label>
@@ -1835,7 +1877,7 @@ function mainView() {
                   <input value="${escapeHtml(state.form.authorMark)}" readonly>
                 </div>
                 <div>
-                  <label class="label">Stan ogolny</label>
+                  <label class="label">Stan ogólny</label>
                   <select data-field="generalState">
                     <option ${sel('Swiadomy')}>Swiadomy</option>
                     <option ${sel('Nieswiadomy')}>Nieswiadomy</option>
@@ -1848,11 +1890,11 @@ function mainView() {
 
               <div class="grid g2">
                 <div>
-                  <label class="label">Imie i nazwisko wlasciciela</label>
+                  <label class="label">Imię i nazwisko właściciela</label>
                   <input data-field="ownerName" value="${escapeHtml(state.form.ownerName)}">
                 </div>
                 <div>
-                  <label class="label">Imie zwierzecia</label>
+                  <label class="label">Imię zwierzęcia</label>
                   <input data-field="animalName" value="${escapeHtml(state.form.animalName)}">
                 </div>
                 <div>
@@ -1861,7 +1903,7 @@ function mainView() {
                     <option value=""></option>
                     <option ${speciesSel('Pies')}>Pies</option>
                     <option ${speciesSel('Kot')}>Kot</option>
-                    <option ${speciesSel('Krolik')}>Krolik</option>
+                    <option value="Krolik" ${speciesSel('Krolik')}>Królik</option>
                   </select>
                 </div>
                 <div class="breed-field">
@@ -1880,7 +1922,7 @@ function mainView() {
                   <input data-field="age" type="number" inputmode="numeric" value="${escapeHtml(state.form.age)}">
                 </div>
                 <div>
-                  <label class="label">Waga</label>
+                  <label class="label">Masa ciała (kg)</label>
                   <input data-field="weight" type="text" inputmode="decimal" value="${escapeHtml(state.form.weight)}">
                 </div>
               </div>
@@ -1889,7 +1931,7 @@ function mainView() {
 
               <div class="grid g2">
                 <div>
-                  <label class="label">Choroby przewlekle</label>
+                  <label class="label">Choroby przewlekłe</label>
                   <textarea data-field="historyChronic">${escapeHtml(state.form.historyChronic)}</textarea>
                 </div>
                 <div>
@@ -1930,7 +1972,7 @@ function mainView() {
 
               <div class="space-16"></div>
 
-              ${drugTable('Dawki lekow', state.form.drugTable, false)}
+              ${drugTable('Planowane leki', state.form.drugTable, false)}
 
               <div class="space-16"></div>
 
@@ -1953,19 +1995,23 @@ function mainView() {
                 </div>
               </div>
 
+              </section>
+              <section id="plan-procedure" class="plan-section" ${state.planSection === 'procedure' ? '' : 'hidden'} aria-label="Przebieg zabiegu">
+                <div class="clinic-actions"><button class="btn secondary" type="button" id="planMonitor">Otwórz monitor</button></div>
+                ${procedureEntryMarkup()}
               <div class="space-16"></div>
 
               <div class="grid g2">
                 <div>
-                  <label class="label">Rozpoczecie zabiegu</label>
+                  <label class="label">Rozpoczęcie zabiegu</label>
                   <input data-field="surgeryStart" type="time" value="${escapeHtml(state.form.surgeryStart)}">
                 </div>
                 <div>
-                  <label class="label">Zakonczenie zabiegu</label>
+                  <label class="label">Zakończenie zabiegu</label>
                   <input data-field="surgeryEnd" type="time" value="${escapeHtml(state.form.surgeryEnd)}">
                 </div>
                 <div>
-                  <label class="label">Lekarz operujacy</label>
+                  <label class="label">Lekarz operujący</label>
                   <input data-field="surgeon" value="${escapeHtml(state.form.surgeon)}">
                 </div>
                 <div>
@@ -1976,11 +2022,16 @@ function mainView() {
 
               <div class="space-16"></div>
 
-              ${drugTable('Leki srodzabiegowe', state.form.intraopDrugs, true)}
+              ${drugTable('Podania śródzabiegowe', state.form.intraopDrugs, true)}
 
               <div class="space-16"></div>
 
               ${vitalsTable()}
+              </section>
+              <section id="plan-recovery" class="plan-section" ${state.planSection === 'recovery' ? '' : 'hidden'} aria-label="Wybudzenie">
+                <label class="label" for="recoveryNotes">Obserwacje i uwagi po znieczuleniu</label>
+                <textarea id="recoveryNotes" data-field="recoveryNotes">${escapeHtml(state.form.recoveryNotes || '')}</textarea>
+              </section>
             </div>
           </div>
         </div>
@@ -1989,18 +2040,172 @@ function mainView() {
   `;
 }
 
+const vitalFields = [
+  ['hr', 'Tętno', 'ud./min'],
+  ['spo2', 'SpO₂', '%'],
+  ['etco2', 'EtCO₂', 'mmHg'],
+  ['temp', 'Temperatura', '°C'],
+  ['pressure', 'Ciśnienie', ''],
+  ['mac', 'MAC', '%']
+];
+
+function procedureEntryMarkup() {
+  return `
+    <div class="procedure-actions no-print">
+      <details class="clinic-details">
+        <summary>+ Dodaj pomiar</summary>
+        <form data-procedure-entry="vitals">
+          <label class="clinic-field">Czas od rozpoczęcia (min)<input name="time" type="number" min="0" step="1" inputmode="numeric" required></label>
+          <div class="entry-grid">
+            ${vitalFields.map(([key, label, unit]) => `
+              <label class="clinic-field">${label}${unit ? ` (${unit})` : ''}<input name="${key}" type="number" step="any" inputmode="decimal"></label>
+            `).join('')}
+          </div>
+          <button class="btn primary-btn" type="submit">Dodaj pomiar do karty</button>
+          <p class="entry-error" role="alert" hidden></p>
+        </form>
+      </details>
+      <details class="clinic-details">
+        <summary>+ Zapisz podanie</summary>
+        <form data-procedure-entry="drug">
+          <div class="entry-grid">
+            <label class="clinic-field">Preparat<input name="name" required></label>
+            <label class="clinic-field">Dawka i jednostka<input name="dose" required></label>
+            <label class="clinic-field">Godzina podania<input name="hour" type="time" required></label>
+            <label class="clinic-field">Uwagi<input name="notes"></label>
+          </div>
+          <button class="btn primary-btn" type="submit">Dodaj podanie do karty</button>
+          <p class="entry-error" role="alert" hidden></p>
+        </form>
+      </details>
+    </div>
+    ${state.entryMessage ? `<p id="entryStatus" class="record-state no-print" role="status" tabindex="-1">${escapeHtml(state.entryMessage)}</p>` : ''}
+  `;
+}
+
+function hasVitalValues(row) {
+  return vitalFields.some(([key]) => hasEntryValue(row[key]));
+}
+
+function hasEntryValue(value) {
+  return String(value ?? '').trim() !== '';
+}
+
+function monitorView() {
+  const measurements = state.form.vitals
+    .filter(hasVitalValues)
+    .sort((first, second) => Number(second.time) - Number(first.time));
+  const latest = measurements[0];
+  const doses = state.form.intraopDrugs.filter((row) => Object.values(row).some(hasEntryValue));
+
+  return `
+    <div class="app clinic-monitor">
+      <div class="clinic-actions">
+        <button type="button" class="btn secondary" id="monitorPlan">Wróć do przebiegu karty</button>
+        <button type="button" class="btn primary-btn" id="saveBtn">Zapisz kartę</button>
+      </div>
+      ${patientIdentityMarkup('Monitor zabiegu')}
+      <section class="card card-body">
+        <h2>Ostatni pomiar</h2>
+        ${latest ? `<p class="small">${escapeHtml(latest.time || '0')} min od rozpoczęcia</p>` : ''}
+        <div class="monitor-grid">
+          ${vitalFields.map(([key, label, unit]) => {
+            const value = latest?.[key];
+            const level = hasEntryValue(value) ? getVitalAlertLevel(key, value) : '';
+            return `
+              <div class="monitor-value ${level ? `monitor-${level}` : ''}">
+                <span>${label}</span>
+                <strong>${hasEntryValue(value) ? escapeHtml(value) : '—'}</strong>
+                ${unit ? `<span class="small">${unit}</span>` : ''}
+                ${level ? `<span class="monitor-alert">${escapeHtml(getVitalAlertText(key, value))}</span>` : ''}
+              </div>
+            `;
+          }).join('')}
+        </div>
+        ${procedureEntryMarkup()}
+      </section>
+      <section class="card card-body monitor-history">
+        <h2>Historia wpisów</h2>
+        <div class="grid g2">
+          <div>
+            <h3>Pomiary</h3>
+            ${measurements.length ? `<ul>${measurements.map(row => `
+              <li><strong>${escapeHtml(row.time || '0')} min</strong><span>${vitalFields
+                .filter(([key]) => hasEntryValue(row[key]))
+                .map(([key, label, unit]) => `${label} ${escapeHtml(row[key])}${unit ? ` ${unit}` : ''}`)
+                .join(' · ')}</span></li>
+            `).join('')}</ul>` : '<p class="small">Brak wpisanych pomiarów.</p>'}
+          </div>
+          <div>
+            <h3>Podania</h3>
+            ${doses.length ? `<ul>${doses.slice().reverse().map(row => `
+              <li><strong>${escapeHtml(row.hour || '—')}</strong><span>${escapeHtml([row.name, row.dose, row.notes].filter(Boolean).join(' · '))}</span></li>
+            `).join('')}</ul>` : '<p class="small">Brak wpisanych podań.</p>'}
+          </div>
+        </div>
+      </section>
+    </div>
+  `;
+}
+
+function addProcedureEntry(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const entry = Object.fromEntries(new FormData(form));
+  for (const key of Object.keys(entry)) entry[key] = entry[key].trim();
+  const error = form.querySelector('.entry-error');
+  error.hidden = true;
+
+  if (form.dataset.procedureEntry === 'vitals') {
+    const minute = Number(entry.time);
+    if (!entry.time || !Number.isSafeInteger(minute) || minute < 0 || !hasVitalValues(entry)) {
+      error.textContent = 'Wpisz czas w minutach i co najmniej jeden parametr.';
+      error.hidden = false;
+      return;
+    }
+    entry.time = String(minute);
+    const existing = state.form.vitals.find(row => Number(row.time) === minute);
+    if (existing && hasVitalValues(existing)) {
+      error.textContent = 'Dla tej minuty jest już pomiar. Możesz go edytować w tabeli w zakładce Przebieg.';
+      error.hidden = false;
+      return;
+    }
+    if (existing) {
+      Object.assign(existing, entry);
+    } else {
+      state.form.vitals.push(entry);
+      state.form.vitals.sort((first, second) => Number(first.time) - Number(second.time));
+    }
+    state.entryMessage = 'Dodano pomiar do szkicu karty.';
+  } else {
+    if (!entry.name || !entry.dose || !entry.hour) {
+      error.textContent = 'Wpisz nazwę, dawkę i godzinę podania.';
+      error.hidden = false;
+      return;
+    }
+    const empty = state.form.intraopDrugs.find(row => !Object.values(row).some(hasEntryValue));
+    if (empty) Object.assign(empty, entry);
+    else state.form.intraopDrugs.push(entry);
+    state.entryMessage = 'Dodano podanie do szkicu karty.';
+  }
+
+  saveDraft();
+  render();
+  document.getElementById('entryStatus')?.focus({ preventScroll: true });
+}
+
 function printPreviewView() {
   return `
     <div class="app">
       <div class="toolbar no-print">
-        <button class="btn secondary" id="backToPlanBtn">Powrot do planu</button>
-        <button class="btn secondary" id="backHomeFromPreviewBtn">Powrot do menu</button>
+        <button class="btn secondary" id="backToPlanBtn">Wróć do karty</button>
+        <button class="btn secondary" id="backHomeFromPreviewBtn">Wróć do kart pacjentów</button>
         <button class="btn primary-btn" id="downloadPdfBtn">Pobierz PDF</button>
       </div>
 
       <div class="card no-print">
         <div class="card-body">
-          <h3>Podglad wydruku</h3>
+          <h3>Podgląd wydruku</h3>
           <div class="small">
             To jest kliniczny podglad planu. Przyciskiem „Pobierz PDF” zapiszesz plik na komputerze lub telefonie.
           </div>
@@ -2177,7 +2382,7 @@ function vitalsTable() {
                 <th>SpO2</th>
                 <th>EtCO2</th>
                 <th>Temp</th>
-                <th>Cisnienie</th>
+                <th>Ciśnienie</th>
                 <th>MAC %</th>
               </tr>
             </thead>
@@ -2186,7 +2391,7 @@ function vitalsTable() {
                 .map(
                   (r, i) => `
                 <tr>
-                  <td class="center">${r.time}</td>
+                  <td class="center">${escapeHtml(r.time)}</td>
                   ${['hr', 'spo2', 'etco2', 'temp', 'pressure', 'mac']
                     .map((k) => {
                       const level = getVitalAlertLevel(k, r[k]);
@@ -2400,19 +2605,64 @@ function bind() {
   }
 
   document.querySelectorAll('[data-nav]').forEach((el) => {
-    el.onclick = () => {
-      state.currentPage = el.dataset.nav;
-      render();
+    el.onclick = () => showClinicPage(el.dataset.nav);
+  });
+
+  const appearance = document.getElementById('openAppearance');
+  if (appearance) appearance.onclick = () => showClinicPage('ustawienia');
+
+  const backHomeBtn = document.getElementById('backHomeBtn');
+  if (backHomeBtn) backHomeBtn.onclick = () => {
+    showClinicPage(state.currentPage === 'dawki' && state.doseFromCard ? 'plan' : 'home');
+  };
+
+  document.querySelectorAll('[data-plan-section]').forEach((button) => {
+    button.onclick = () => {
+      state.planSection = button.dataset.planSection;
+      document.querySelectorAll('[data-plan-section]').forEach((step) => {
+        const active = step === button;
+        step.setAttribute('aria-pressed', String(active));
+        document.getElementById(step.getAttribute('aria-controls')).hidden = !active;
+      });
     };
   });
 
-  const backHomeBtn = document.getElementById('backHomeBtn');
-  if (backHomeBtn) {
-    backHomeBtn.onclick = () => {
-      state.currentPage = 'home';
-      render();
-    };
-  }
+  document.querySelectorAll('[data-procedure-entry]').forEach(form => {
+    form.onsubmit = addProcedureEntry;
+  });
+
+  const planMonitor = document.getElementById('planMonitor');
+  if (planMonitor) planMonitor.onclick = () => showClinicPage('monitor');
+
+  const monitorPlan = document.getElementById('monitorPlan');
+  if (monitorPlan) monitorPlan.onclick = () => {
+    state.planSection = 'procedure';
+    showClinicPage('plan');
+  };
+
+  const doseFromCard = document.getElementById('doseFromCard');
+  if (doseFromCard) doseFromCard.onclick = () => {
+    const species = state.form.species;
+    Object.assign(state, {
+      doseFromCard: true,
+      doseSpecies: ['Pies', 'Kot'].includes(species) ? species : '',
+      doseWeight: state.form.weight || '',
+      doseDrugName: '',
+      doseDrugQuery: '',
+      selectedDosePreset: null,
+      selectedProtocolId: '',
+      doseMgKg: '',
+      doseMgMl: '',
+      doseMlPerKg: '',
+      dosePresetNote: '',
+      doseRoute: '',
+      doseMgKgChoice: '',
+      doseTab: 'calculator'
+    });
+    state.currentPage = 'dawki';
+    render();
+    window.scrollTo(0, 0);
+  };
 
   const backToPlanBtn = document.getElementById('backToPlanBtn');
   if (backToPlanBtn) {
@@ -2447,10 +2697,18 @@ function bind() {
     themeSelect.onchange = (e) => {
       state.theme = e.target.value;
       saveTheme(state.theme);
-      render();
+      applyTheme();
+      updateThemeButton();
     };
   }
 
+
+  const accentSelect = document.getElementById('accentSelect');
+  if (accentSelect) accentSelect.onchange = (event) => {
+    state.accent = event.target.value;
+    localStorage.setItem(ACCENT_KEY, state.accent);
+    applyTheme();
+  };
 
   const saveSupabaseConfigBtn = document.getElementById('saveSupabaseConfigBtn');
   if (saveSupabaseConfigBtn) {
@@ -2647,38 +2905,25 @@ function bind() {
     };
   }
 
-  document.querySelectorAll('[data-field]').forEach((el) => {
-    el.oninput = (e) => {
-      const field = e.target.dataset.field;
-      state.form[field] = field === 'weight' ? readMassInput(e.target, state.form.weight) : e.target.value;
-
-      if (field === 'species') {
-        state.form.breed = '';
-        saveDraft();
-        render();
-        return;
-      }
-
+  document.querySelectorAll('[data-field]').forEach((element) => {
+    const field = element.dataset.field;
+    const update = () => {
+      state.form[field] = field === 'weight' ? readMassInput(element, state.form.weight) : element.value;
+      if (field === 'species') state.form.breed = '';
       saveDraft();
-
-      if (field === 'breed') updateBreedSuggestions();
-    };
-
-    el.onchange = (e) => {
-      const field = e.target.dataset.field;
-      state.form[field] = field === 'weight' ? readMassInput(e.target, state.form.weight) : e.target.value;
-
-      if (field === 'species') {
-        state.form.breed = '';
-        saveDraft();
-        render();
-        return;
+      if (field === 'species' || field === 'breed') {
+        const breedInput = document.getElementById('breedInput');
+        if (field === 'species' && breedInput) {
+          breedInput.value = '';
+          breedInput.placeholder = state.form.species ? 'Wpisz rasę...' : 'Najpierw wybierz gatunek';
+        }
+        updateBreedSuggestions();
       }
-
-      saveDraft();
-
-      if (field === 'breed') updateBreedSuggestions();
+      const identity = document.getElementById('planIdentity');
+      if (identity) identity.innerHTML = patientIdentityMarkup();
     };
+    if (element.tagName === 'SELECT') element.onchange = update;
+    else element.oninput = update;
   });
 
   document.querySelectorAll('[data-temp]').forEach((el) => {
@@ -2716,23 +2961,24 @@ function bind() {
     };
   });
 
-  const s = document.getElementById('searchInput');
-  if (s) {
-    s.oninput = (e) => {
-      state.query = e.target.value;
-      render();
+  const search = document.getElementById('searchInput');
+  const patientResults = document.getElementById('patientResults');
+  if (search && patientResults) {
+    search.oninput = () => {
+      state.query = search.value;
+      patientResults.innerHTML = patientRecordsMarkup();
     };
+    patientResults.onclick = handlePatientAction;
   }
 
-  const n = document.getElementById('newBtn');
-  if (n) {
-    n.onclick = () => {
-      state.selectedId = null;
-      state.form = blankForm();
-      clearDraft();
-      render();
-    };
-  }
+  const newCard = document.getElementById('newBtn');
+  if (newCard) newCard.onclick = () => {
+    state.selectedId = null;
+    state.form = blankForm();
+    state.planSection = 'prep';
+    clearDraft();
+    showClinicPage('plan');
+  };
 
   const sv = document.getElementById('saveBtn');
   if (sv) sv.onclick = saveCurrent;
@@ -2759,49 +3005,11 @@ function bind() {
         age: f.age,
         weight: f.weight
       });
+      state.planSection = 'prep';
       saveDraft();
-      render();
+      showClinicPage('plan');
     };
   }
-
-  document.querySelectorAll('[data-open]').forEach((b) => {
-    b.onclick = (e) => {
-      const id = e.currentTarget.dataset.open;
-      const rec = state.records.find((r) => r.id === id);
-      if (rec) {
-        state.selectedId = id;
-        state.form = JSON.parse(JSON.stringify(rec.data));
-        saveDraft();
-        render();
-      }
-    };
-  });
-
-  document.querySelectorAll('[data-del]').forEach((b) => {
-    b.onclick = async (e) => {
-      e.stopPropagation();
-      const id = e.currentTarget.dataset.del;
-      if (!confirm('Usunac te karte?')) return;
-
-      const client = getSupabaseClient();
-      if (client && state.user) {
-        const { error } = await client.from('patients').delete().eq('id', id);
-        if (error) {
-          alert('Nie udało się usunąć z bazy online: ' + error.message);
-          return;
-        }
-      }
-
-      state.records = state.records.filter((r) => r.id !== id);
-      saveRecords();
-      if (state.selectedId === id) {
-        state.selectedId = null;
-        state.form = blankForm();
-        clearDraft();
-      }
-      render();
-    };
-  });
 
   const ex = document.getElementById('exportBtn');
   if (ex) ex.onclick = exportBackup;
@@ -2811,11 +3019,57 @@ function bind() {
 
   const pc = document.getElementById('pinChange');
   if (pc) pc.onchange = (e) => setPin(e.target.value || defaultPin);
+}
 
-  document.querySelectorAll('input, textarea, select').forEach((el) => {
-    el.addEventListener('input', () => saveDraft());
-    el.addEventListener('change', () => saveDraft());
-  });
+function showClinicPage(page) {
+  state.currentPage = page;
+  state.doseFromCard = false;
+  state.entryMessage = '';
+  render();
+  window.scrollTo(0, 0);
+}
+
+function updateThemeButton() {
+  const button = document.getElementById('openAppearance');
+  if (button) button.textContent = getThemeLabel();
+}
+
+async function handlePatientAction(event) {
+  const open = event.target.closest('[data-open]');
+  if (open) {
+    const record = state.records.find((item) => item.id === open.dataset.open);
+    if (record) {
+      state.selectedId = record.id;
+      state.form = JSON.parse(JSON.stringify(record.data));
+      state.planSection = 'prep';
+      clearDraft();
+      showClinicPage('plan');
+    }
+    return;
+  }
+
+  const remove = event.target.closest('[data-del]');
+  if (!remove || !confirm('Usunąć tę kartę?')) return;
+  const id = remove.dataset.del;
+  const client = getSupabaseClient();
+  if (client && state.user) {
+    const { error } = await client.from('patients').delete().eq('id', id);
+    if (error) {
+      alert('Nie udało się usunąć z bazy online: ' + error.message);
+      return;
+    }
+  }
+
+  state.records = state.records.filter((r) => r.id !== id);
+  saveRecords();
+  if (state.selectedId === id) {
+    state.selectedId = null;
+    state.form = blankForm();
+    state.planSection = 'prep';
+    state.entryMessage = '';
+    clearDraft();
+  }
+  render();
 }
 
 function isUuid(value) {
@@ -2866,6 +3120,7 @@ async function saveCurrent() {
 
     state.selectedId = result.data.id;
     clearDraft();
+    state.entryMessage = '';
     await loadCloudRecords();
     alert('Zapisano online');
     render();
@@ -2900,6 +3155,7 @@ async function saveCurrent() {
 
   saveRecords();
   clearDraft();
+  state.entryMessage = '';
   alert('Zapisano lokalnie');
   render();
 }
@@ -3209,7 +3465,8 @@ function renderPrintableCardMarkup(form) {
         </div>
 
         <div style="border:1px solid #000;padding:8px;margin-top:auto;">
-          <div style="font-weight:700;font-size:15px;margin-bottom:8px;">Uwagi końcowe / podpis</div>
+          <div style="font-weight:700;font-size:15px;margin-bottom:8px;">Wybudzenie i uwagi końcowe</div>
+          ${form.recoveryNotes ? `<div style="white-space:pre-wrap;">${escapeHtml(form.recoveryNotes)}</div>` : ''}
           <div style="
             height:54px;
             margin-bottom:16px;
@@ -3282,14 +3539,6 @@ function generatePDF() {
       alert('Nie udało się wygenerować PDF.');
     });
 }
-
-document.addEventListener('visibilitychange', () => {
-  if (document.hidden && state.unlocked) saveDraft();
-});
-
-window.addEventListener('pagehide', () => {
-  if (state.unlocked) saveDraft();
-});
 
 applyTheme();
 render();
