@@ -366,10 +366,12 @@ const blankForm = () => ({
   updatedAt: ''
 });
 
+const initialDraft = loadDraft();
+
 let state = {
   records: loadRecords(),
-  selectedId: null,
-  form: loadDraft() || blankForm(),
+  selectedId: initialDraft?.selectedId ?? null,
+  form: initialDraft?.form ?? blankForm(),
   query: '',
   unlocked: false,
   currentPage: 'home',
@@ -626,7 +628,7 @@ async function signOut() {
   state.unlocked = false;
   state.currentPage = 'home';
   state.selectedId = null;
-  state.form = loadDraft() || blankForm();
+  state.form = blankForm();
   render();
 }
 
@@ -658,14 +660,16 @@ async function initSupabaseAuth() {
 
 function loadDraft() {
   try {
-    return JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null');
+    const saved = JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null');
+    if (!saved || typeof saved !== 'object' || Array.isArray(saved)) return null;
+    return saved.form ? saved : { selectedId: null, form: saved };
   } catch {
     return null;
   }
 }
 
 function saveDraft() {
-  localStorage.setItem(DRAFT_KEY, JSON.stringify(state.form));
+  localStorage.setItem(DRAFT_KEY, JSON.stringify({ selectedId: state.selectedId, form: state.form }));
 }
 
 function clearDraft() {
@@ -735,14 +739,14 @@ function calculateDoseValues(weight, preset) {
   const mlPerKg = Number(preset?.mlPerKg || 0);
 
   let totalMg = 0;
-  let totalMl = 0;
+  let totalMl = null;
 
   if (w > 0 && mlPerKg > 0) {
     totalMl = w * mlPerKg;
     totalMg = mgMl > 0 ? totalMl * mgMl : 0;
   } else if (w > 0 && mgKg > 0) {
     totalMg = w * mgKg;
-    totalMl = mgMl > 0 ? totalMg / mgMl : 0;
+    totalMl = mgMl > 0 ? totalMg / mgMl : null;
   }
 
   return { totalMg, totalMl };
@@ -760,7 +764,7 @@ function buildProtocolPreview(protocol, species, weight) {
       const itemMlPerKg = Number(item.mlPerKg || 0);
 
       let totalMg = 0;
-      let totalMl = 0;
+      let totalMl = null;
 
       if (itemMlPerKg > 0 && w > 0) {
         totalMl = w * itemMlPerKg;
@@ -820,7 +824,7 @@ function addProtocolToPlan() {
   preview.forEach((item) => {
     const newRow = {
       name: item.name,
-      dose: `${item.totalMg.toFixed(2)} mg / ${item.totalMl.toFixed(2)} ml`,
+      dose: `${item.totalMg.toFixed(2)} mg / ${formatDoseVolume(item.totalMl, item.totalMg)}`,
       route: item.route || '',
       notes: item.note || ''
     };
@@ -1135,7 +1139,7 @@ function renderProtocolPreviewMarkup() {
             <div class="result-box">
               <div class="result-label">${escapeHtml(item.name)} • ${escapeHtml(item.route)}</div>
               <div class="small">Dawka: ${escapeHtml(item.doseLabel || (item.mgKg !== '' ? String(item.mgKg) + ' mg/kg' : 'wg schematu'))}</div>
-              <div class="small">Wynik: ${item.totalMg.toFixed(2)} mg / ${item.totalMl.toFixed(2)} ml</div>
+              <div class="small">Wynik: ${item.totalMg.toFixed(2)} mg / ${formatDoseVolume(item.totalMl, item.totalMg)}</div>
             </div>
           `
             )
@@ -1152,6 +1156,11 @@ function renderProtocolPreviewMarkup() {
   `;
 }
 
+function formatDoseVolume(totalMl, totalMg) {
+  if (totalMl === null) return totalMg > 0 ? 'Uzupełnij stężenie' : '—';
+  return totalMl >= 0.01 ? `${totalMl.toFixed(2)} ml` : `${Number(totalMl.toPrecision(3))} ml`;
+}
+
 function updateDoseCalculator() {
   const weight = Number(state.doseWeight || 0);
   const mgKg = Number(state.doseMgKg || 0);
@@ -1159,14 +1168,14 @@ function updateDoseCalculator() {
   const mlPerKg = Number(state.doseMlPerKg || 0);
 
   let totalMg = 0;
-  let totalMl = 0;
+  let totalMl = null;
 
   if (weight > 0 && mlPerKg > 0) {
     totalMl = weight * mlPerKg;
     totalMg = mgMl > 0 ? totalMl * mgMl : 0;
   } else if (weight > 0 && mgKg > 0) {
     totalMg = weight * mgKg;
-    totalMl = mgMl > 0 ? totalMg / mgMl : 0;
+    totalMl = mgMl > 0 ? totalMg / mgMl : null;
   }
 
   const mgBox = document.getElementById('doseTotalMg');
@@ -1174,7 +1183,7 @@ function updateDoseCalculator() {
   const noteBox = document.getElementById('dosePresetNote');
 
   if (mgBox) mgBox.textContent = `${totalMg.toFixed(2)} mg`;
-  if (mlBox) mlBox.textContent = `${totalMl.toFixed(2)} ml`;
+  if (mlBox) mlBox.textContent = formatDoseVolume(totalMl, totalMg);
   if (noteBox) noteBox.textContent = state.dosePresetNote || 'Brak dodatkowej uwagi.';
 }
 
@@ -1335,14 +1344,14 @@ function dosesView() {
   const mlPerKg = Number(state.doseMlPerKg || 0);
 
   let totalMg = 0;
-  let totalMl = 0;
+  let totalMl = null;
 
   if (weight > 0 && mlPerKg > 0) {
     totalMl = weight * mlPerKg;
     totalMg = mgMl > 0 ? totalMl * mgMl : 0;
   } else if (weight > 0 && mgKg > 0) {
     totalMg = weight * mgKg;
-    totalMl = mgMl > 0 ? totalMg / mgMl : 0;
+    totalMl = mgMl > 0 ? totalMg / mgMl : null;
   }
 
   return `
@@ -1428,7 +1437,7 @@ function dosesView() {
 
                   <div class="result-box">
                     <div class="result-label">Objętość do podania</div>
-                    <div class="result-value" id="doseTotalMl">${totalMl.toFixed(2)} ml</div>
+                    <div class="result-value" id="doseTotalMl">${formatDoseVolume(totalMl, totalMg)}</div>
                   </div>
                 </div>
 
@@ -1458,7 +1467,7 @@ function dosesView() {
 
             <div class="space-16"></div>
 
-            ${renderProtocolPreviewMarkup()}
+            <div id="protocolPreview">${renderProtocolPreviewMarkup()}</div>
           `
           }
         </div>
@@ -2294,14 +2303,14 @@ function addDoseToPlan() {
   }
 
   let totalMg = 0;
-  let totalMl = 0;
+  let totalMl = null;
 
   if (weight > 0 && mlPerKg > 0) {
     totalMl = weight * mlPerKg;
     totalMg = mgMl > 0 ? totalMl * mgMl : 0;
   } else if (weight > 0 && mgKg > 0) {
     totalMg = weight * mgKg;
-    totalMl = mgMl > 0 ? totalMg / mgMl : 0;
+    totalMl = mgMl > 0 ? totalMg / mgMl : null;
   } else {
     alert('Uzupełnij dawkę mg/kg albo schemat ml/kg.');
     return;
@@ -2309,7 +2318,7 @@ function addDoseToPlan() {
 
   const newRow = {
     name: drugName,
-    dose: `${totalMg.toFixed(2)} mg / ${totalMl.toFixed(2)} ml`,
+    dose: `${totalMg.toFixed(2)} mg / ${formatDoseVolume(totalMl, totalMg)}`,
     route: state.doseRoute || '',
     notes: state.dosePresetNote || ''
   };
@@ -2514,6 +2523,8 @@ function bind() {
     doseWeight.oninput = (e) => {
       state.doseWeight = e.target.value;
       updateDoseCalculator();
+      const preview = document.getElementById('protocolPreview');
+      if (preview) preview.innerHTML = renderProtocolPreviewMarkup();
     };
   }
 
@@ -2599,10 +2610,10 @@ function bind() {
     };
   });
 
-  const addProtocolToPlanBtn = document.getElementById('addProtocolToPlanBtn');
-  if (addProtocolToPlanBtn) {
-    addProtocolToPlanBtn.onclick = () => {
-      addProtocolToPlan();
+  const protocolPreview = document.getElementById('protocolPreview');
+  if (protocolPreview) {
+    protocolPreview.onclick = (e) => {
+      if (e.target.closest('#addProtocolToPlanBtn')) addProtocolToPlan();
     };
   }
 
@@ -2766,6 +2777,7 @@ function bind() {
       if (state.selectedId === id) {
         state.selectedId = null;
         state.form = blankForm();
+        clearDraft();
       }
       render();
     };
